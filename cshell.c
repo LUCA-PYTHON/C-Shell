@@ -1,22 +1,38 @@
-#include <stdio.h> // Standart-Lib
-#include <stdlib.h> // Hilfsfunktionen
-#include <string.h> // Textfunktionen
-#include <unistd.h> // Unix-Systemaufrufe
+#include <stdio.h>    // Standart-Lib
+#include <stdlib.h>   // Hilfsfunktionen
+#include <string.h>   // Textfunktionen
+#include <unistd.h>   // Unix-Systemaufrufe
 #include <sys/wait.h> //Prozesse abwarten
 
 #define MAX_ARGS 64
+
+void hilfe()
+{
+    printf("\n");
+    printf("\033[1;33m  C-Shell - Befehlsübersicht\033[0m\n");
+    printf("\033[0m");
+    printf("  \033[1;32m%-14s\033[0m %s\n", "cd [ordner]", "Verzeichnis wechseln");
+    printf("  \033[1;32m%-14s\033[0m %s\n", "pwd", "Aktuelles Verzeichnis anzeigen");
+    printf("  \033[1;32m%-14s\033[0m %s\n", "help", "Diese Hilfe anzeigen");
+    printf("  \033[1;32m%-14s\033[0m %s\n", "exit", "Shell beenden");
+    printf("  \033[1;32m%-14s\033[0m %s\n", "echo $?", "Letzten Exit-Status anzeigen");
+
+    printf("\n  \033[90mWeitere Linux-Befehle wie ls, cat und gcc sind ebenfalls verfügbar.\033[0m\n");
+    printf("\n");
+}
 
 int main(void)
 {
     char line[1024];
     int last_status = 0;
 
-    printf("Willkommen bei C-Shell! (exit zum Beenden)\n");  // Willkommensnachricht
+    printf("Willkommen bei C-Shell! (exit zum Beenden)\n"); // Willkommensnachricht
 
     while (1)
     {
         char cwd[1024];
-        if (getcwd(cwd, sizeof(cwd)) == NULL) strcpy(cwd, "?");
+        if (getcwd(cwd, sizeof(cwd)) == NULL)
+            strcpy(cwd, "?");
         printf("c-shell [%s]>", cwd);
         fflush(stdout);
 
@@ -37,40 +53,56 @@ int main(void)
         }
         args[argc] = NULL;
 
-        if (argc == 0) continue;  // Keine Eingabe wird übersprungen
+        if (argc == 0)
+            continue; // Keine Eingabe wird übersprungen
 
-        if (strcmp(args[0], "exit") == 0) break;  // "exit" beenden die Shell
+        if (strcmp(args[0], "exit") == 0)
+            break; // "exit" beenden die Shell
 
-        if (strcmp(args[0], "cd") == 0)  // position (Ordner) wechseln
+        if (strcmp(args[0], "cd") == 0) // position (Ordner) wechseln
         {
             const char *dir = args[1] ? args[1] : getenv("HOME");
-            if (chdir(dir) != 0) perror("cd");
+            if (dir == NULL)
+            {
+                fprintf(stderr, "cd: HOME ist nicht gesetzt");
+            }
+            else if (chdir(dir) != 0)
+            {
+                perror("cd");
+            }
+
             continue;
         }
 
-        if (strcmp(args[0], "pwd") == 0)  // aktuelle Position anzeigen
+        if (strcmp(args[0], "pwd") == 0) // aktuelle Position anzeigen
         {
             printf("%s\n", cwd);
             continue;
         }
 
-        char status_text[20];
-        char neuer_text[1024];
-        snprintf(status_text, sizeof(status_text), "%d", last_status);  // Letzten exit code abfragen
+        if (strcmp(args[0], "help") == 0 || strcmp(args[0], "h") == 0)
+        {
+            hilfe();
+            continue;
+        }
 
-        for (int i = 0; i < argc; i++)  // Eingabe zerlegen und immer bei $? -> Exit code
+        char status_text[20];
+        char ersatz_text[MAX_ARGS][1024];
+        snprintf(status_text, sizeof(status_text), "%d", last_status); // Letzten exit code abfragen
+
+        for (int i = 0; i < argc; i++) // Eingabe zerlegen und immer bei $? -> Exit code
         {
 
             char *fundstelle = strstr(args[i], "$?");
-            
+
             if (fundstelle != NULL)
             {
-                snprintf(neuer_text, sizeof(neuer_text), "%.*s%s%s", (int)(fundstelle -args[i]),
-                args[i],
-                status_text,
-                fundstelle +2);
+                snprintf(ersatz_text[i], sizeof(ersatz_text[i]), "%.*s%s%s", (int)(fundstelle - args[i]),
+                         args[i],
+                         status_text,
+                         fundstelle + 2);
 
-                args[i] = neuer_text;
+                args[i] = ersatz_text[i];
             }
         }
 
@@ -84,14 +116,14 @@ int main(void)
         else if (pid > 0)
         {
             int status;
-            
-            if (waitpid(pid, &status, 0) == -1)  // Überprüfen ob Kindprozess erfolgreich beendet wurde
+
+            if (waitpid(pid, &status, 0) == -1) // Überprüfen ob Kindprozess erfolgreich beendet wurde
             {
                 perror("waitpid");
             }
             else if (WIFEXITED(status))
             {
-                last_status =  WEXITSTATUS(status);
+                last_status = WEXITSTATUS(status);
             }
             else if (WIFSIGNALED(status))
             {
@@ -102,8 +134,6 @@ int main(void)
         {
             perror("fork");
         }
-        
     }
     return 0;
-    
 }
