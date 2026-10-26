@@ -9,11 +9,12 @@
 int main(void)
 {
     char line[1024];
+    int last_status = 0;
+
     printf("Willkommen bei C-Shell! (exit zum Beenden)\n");  // Willkommensnachricht
 
     while (1)
     {
-        int last_status = 0;
         char cwd[1024];
         if (getcwd(cwd, sizeof(cwd)) == NULL) strcpy(cwd, "?");
         printf("c-shell [%s]>", cwd);
@@ -53,13 +54,32 @@ int main(void)
             continue;
         }
 
+        char status_text[20];
+        char neuer_text[1024];
+        snprintf(status_text, sizeof(status_text), "%d", last_status);  // Letzten exit code abfragen
+
+        for (int i = 0; i < argc; i++)  // Eingabe zerlegen und immer bei $? -> Exit code
+        {
+
+            char *fundstelle = strstr(args[i], "$?");
+            
+            if (fundstelle != NULL)
+            {
+                snprintf(neuer_text, sizeof(neuer_text), "%.*s%s%s", (int)(fundstelle -args[i]),
+                args[i],
+                status_text,
+                fundstelle +2);
+
+                args[i] = neuer_text;
+            }
+        }
+
         pid_t pid = fork();
         if (pid == 0)
         {
             execvp(args[0], args);
             perror(args[0]);
             exit(1);
-            last_status = 1;
         }
         else if (pid > 0)
         {
@@ -71,8 +91,11 @@ int main(void)
             }
             else if (WIFEXITED(status))
             {
-                last_status = WEXITSTATUS(status);
-                printf("Exit-Status: %d\n", WEXITSTATUS(status));
+                last_status =  WEXITSTATUS(status);
+            }
+            else if (WIFSIGNALED(status))
+            {
+                last_status = 128 + WTERMSIG(status);
             }
         }
         else
