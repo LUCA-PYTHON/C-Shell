@@ -13,6 +13,7 @@ int main(void)
 
     while (1)
     {
+        int last_status = 0;
         char cwd[1024];
         if (getcwd(cwd, sizeof(cwd)) == NULL) strcpy(cwd, "?");
         printf("c-shell [%s]>", cwd);
@@ -27,7 +28,7 @@ int main(void)
 
         char *args[MAX_ARGS];
         int argc = 0;
-        char *token = strtok(NULL, " \t");
+        char *token = strtok(line, " \t");
         while (token != NULL && argc < MAX_ARGS - 1)
         {
             args[argc++] = token;
@@ -58,10 +59,21 @@ int main(void)
             execvp(args[0], args);
             perror(args[0]);
             exit(1);
+            last_status = 1;
         }
         else if (pid > 0)
         {
-            waitpid(pid, NULL, 0);
+            int status;
+            
+            if (waitpid(pid, &status, 0) == -1)  // Überprüfen ob Kindprozess erfolgreich beendet wurde
+            {
+                perror("waitpid");
+            }
+            else if (WIFEXITED(status))
+            {
+                last_status = WEXITSTATUS(status);
+                printf("Exit-Status: %d\n", WEXITSTATUS(status));
+            }
         }
         else
         {
@@ -72,23 +84,3 @@ int main(void)
     return 0;
     
 }
-
-/*
-sudo apt install build-essential
-gcc -Wall -Wextra -o cshell cshell.c
-
-mkdir -p ~/.local/bin ~/.local/share/applications
-cp cshell ~/.local/bin/
-
-cat > ~/.local/share/applications/c-shell.desktop << EOF
-[Desktop Entry]
-Type=Application
-Name=C-Shell
-Comment=Meine selbstgebaute Shell in C
-Exec=$HOME/.local/bin/cshell
-Terminal=true
-Categories=System;TerminalEmulator;
-EOF
-
-update-desktop-database ~/.local/share/applications
-*/
