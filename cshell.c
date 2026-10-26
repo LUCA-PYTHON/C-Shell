@@ -9,7 +9,7 @@
 int main(void)
 {
     char line[1024];
-    printf("Willkommen bei C-Shell! (exit zum Beenden)\n");
+    printf("Willkommen bei C-Shell! (exit zum Beenden)\n");  // Willkommensnachricht
 
     while (1)
     {
@@ -27,7 +27,7 @@ int main(void)
 
         char *args[MAX_ARGS];
         int argc = 0;
-        char *token = strtok(line, "\t");
+        char *token = strtok(NULL, " \t");
         while (token != NULL && argc < MAX_ARGS - 1)
         {
             args[argc++] = token;
@@ -35,18 +35,18 @@ int main(void)
         }
         args[argc] = NULL;
 
-        if (argc == 0) continue;
+        if (argc == 0) continue;  // Keine Eingabe wird übersprungen
 
-        if (strcmp(args[0], "exit") == 0) break;
+        if (strcmp(args[0], "exit") == 0) break;  // "exit" beenden die Shell
 
-        if (strcmp(args[0], "cd") == 0)
+        if (strcmp(args[0], "cd") == 0)  // position (Ordner) wechseln
         {
             const char *dir = args[1] ? args[1] : getenv("HOME");
             if (chdir(dir) != 0) perror("cd");
             continue;
         }
 
-        if (strcmp(args[0], "pwd") == 0)
+        if (strcmp(args[0], "pwd") == 0)  // aktuelle Position anzeigen
         {
             printf("%s\n", cwd);
             continue;
