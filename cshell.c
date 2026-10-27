@@ -86,24 +86,66 @@ int main(void)
             continue;
         }
 
-        char status_text[20];
-        char ersatz_text[MAX_ARGS][1024];
-        snprintf(status_text, sizeof(status_text), "%d", last_status); // Letzten exit code abfragen
-
-        for (int i = 0; i < argc; i++) // Eingabe zerlegen und immer bei $? -> Exit code
+        if (strcmp(args[0], "echo") == 0)
         {
+            char status_text[20];
+            char puffer1[1024];
+            char puffer2[1024];
 
-            char *fundstelle = strstr(args[i], "$?");
-
-            if (fundstelle != NULL)
+            // Letzten Exit-Status in Text umwandeln
+            snprintf(status_text, sizeof(status_text), "%d", last_status); // Letzten Exit-Status abfragen
+            
+            for (int i = 1; i < argc; i++)
             {
-                snprintf(ersatz_text[i], sizeof(ersatz_text[i]), "%.*s%s%s", (int)(fundstelle - args[i]),
-                         args[i],
-                         status_text,
-                         fundstelle + 2);
 
-                args[i] = ersatz_text[i];
+                // Argument in den Arbeitspuffer kopieren
+                int geschrieben = snprintf(puffer1, sizeof(puffer1), "%s", args[i]);
+                if (geschrieben < 0 || (size_t)geschrieben >= sizeof(puffer1))
+                {
+                    fprintf(stderr, "Error: Eingabe zu lang\n");
+                    continue;
+                }
+
+                // Nach $? im aktuellen Text suchen
+                char *fundstelle = strstr(puffer1, "$?");
+                
+                while(fundstelle != NULL)
+                {
+                    // Text vor $? + Exit-Status + Text nach $?
+                    geschrieben = snprintf(puffer2, sizeof(puffer2), "%.*s%s%s",
+                        (int)(fundstelle - puffer1),
+                        puffer1,
+                        status_text,
+                        fundstelle +2);
+
+                    if (geschrieben < 0 || (size_t)geschrieben >= sizeof(puffer2))
+                    {
+                        fprintf(stderr, "Error: Ersetzter Text zu lang\n");
+                        break;
+                    }
+
+                    // Ersetztes Ergebnis zurück in den Arbeitspuffer kopieren
+                    geschrieben = snprintf(puffer1, sizeof(puffer1), "%s", puffer2);
+                    if (geschrieben < 0 || (size_t)geschrieben >= sizeof(puffer1))
+                    {
+                        fprintf(stderr, "Error: Ersetzter Text zu lange\n");
+                        break;
+                    }
+
+                    // Im aktualisierten Text nach dem nächsten $? suchen
+                    fundstelle = strstr(puffer1, "$?");
+                }
+
+                // Argumente mit Leerzeichen trennen
+                if (i > 1)
+                {
+                    printf(" ");
+                }
+                printf("%s", puffer1);
             }
+            printf("\n");
+
+            continue;
         }
 
         pid_t pid = fork();
