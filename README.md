@@ -7,7 +7,7 @@ Sie kann nicht viel, aber das, was sie kann, habe ich selbst geschrieben und ver
 ## Was sie kann
 
 - Befehle einlesen und ausführen (`ls`, `grep`, `mkdir` und alles andere, was im `PATH` liegt)
-- Eigene Built-ins: `cd`, `pwd` und `exit`
+- Eigene Built-ins: `cd`, `pwd`, `echo`, `help` und `exit`
 - Im Prompt steht immer das aktuelle Verzeichnis
 
 ## Ausprobieren
