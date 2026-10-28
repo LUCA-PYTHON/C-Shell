@@ -1,1 +1,9 @@
+# Executables
 *.exe
+/c-shell
+
+# Object files
+*.o
+
+# Debug files
+*.out
