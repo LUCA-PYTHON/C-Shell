@@ -1,9 +1,36 @@
-# Executables
-*.exe
+# Compiled binaries
 /c-shell
+/tests/test_parser
 
 # Object files
 *.o
+*.obj
+
+# Libraries
+*.a
+*.so
+*.dll
+*.lib
 
 # Debug files
 *.out
+*.exe
+core
+core.*
+
+# Build directories
+/build/
+/bin/
+
+# Editor and IDE files
+.vscode/
+.idea/
+
+# Temporary files
+*.tmp
+*.swp
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
