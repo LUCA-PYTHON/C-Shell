@@ -39,15 +39,8 @@ int execute_external_command(char **args)
 
         if (waitpid(pid, &status, 0) == -1) // Überprüfen ob Kindprozess erfolgreich beendet wurde
         {
-            if (errno == ECHILD)
-            {
-                fprintf(stderr, "%s: waitpid error", args[0]);
-            }
-            else
-            {
-                perror("waitpid");
-                command_status = SHELL_STATUS_ERROR;
-            }
+            perror("waitpid");
+            command_status = SHELL_STATUS_ERROR;
         }
         else if (WIFEXITED(status))
         {
