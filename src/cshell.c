@@ -10,8 +10,6 @@
 #include "parser.h"
 #include "shell_status.h"
 
-#define MAX_ARGS 64
-
 int main(void)
 {
     char line[1024];
@@ -37,6 +35,13 @@ int main(void)
         {
             perror("read_input");
             break;
+        }
+
+        if (input_error == INPUT_STATUS_TOO_LONG)
+        {
+            fprintf(stderr, "Error: Input is to long\n");
+            last_status = SHELL_STATUS_PARSE_ERROR;
+            continue;
         }
 
         char *args[MAX_ARGS];

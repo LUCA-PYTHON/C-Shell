@@ -34,7 +34,8 @@ bool parse_line(char *line, char **args, int *argc_out)
         {
             if (argc >= MAX_ARGS - 1)
             {
-                break;
+                fprintf(stderr, "Error: to mutch arguments\n");
+                return false;
             }
 
             args[argc] = &line[write];
