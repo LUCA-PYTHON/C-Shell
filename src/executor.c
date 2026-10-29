@@ -36,20 +36,29 @@ int execute_external_command(char **args)
     else if (pid > 0)
     {
         int status;
+        pid_t result;
 
-        if (waitpid(pid, &status, 0) == -1) // Überprüfen ob Kindprozess erfolgreich beendet wurde
+        do
+        {
+            result = waitpid(pid, &status, 0);
+        }while (result == -1 && errno == EINTR);
+
+        if (result == -1)
         {
             perror("waitpid");
             command_status = SHELL_STATUS_ERROR;
         }
+
         else if (WIFEXITED(status))
         {
             command_status = WEXITSTATUS(status);
         }
+
         else if (WIFSIGNALED(status))
         {
             command_status = 128 + WTERMSIG(status);
         }
+        
     }
     else
     {

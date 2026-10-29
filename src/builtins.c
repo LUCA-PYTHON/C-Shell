@@ -95,7 +95,7 @@ int print_echo(char **args, int last_status)
 
 }
 
-int print_help()
+int print_help(void)
 {
     printf("\n");
     printf("\033[1;33m  C-Shell - Befehlsübersicht\033[0m\n");
