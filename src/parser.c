@@ -2,6 +2,7 @@
 #include <stdbool.h>
 
 #include "parser.h"
+#include "shell_status.h"
 
 bool parse_line(char *line, char **args, int *argc_out)
 {

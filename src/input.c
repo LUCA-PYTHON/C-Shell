@@ -2,15 +2,16 @@
 #include <string.h>
 
 #include "input.h"
+#include "shell_status.h"
 
 int read_input(char *buffer, size_t size)
 {
     if (fgets(buffer, size, stdin) == NULL)
     {
-        return -1;
+        return SHELL_STATUS_ERROR;
     }
 
     buffer[strcspn(buffer, "\n")] = '\0';
 
-    return 0;
+    return SHELL_STATUS_SUCCESS;
 }
