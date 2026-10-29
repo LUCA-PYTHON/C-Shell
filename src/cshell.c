@@ -8,13 +8,14 @@
 #include "builtins.h"
 #include "input.h"
 #include "parser.h"
+#include "shell_status.h"
 
 #define MAX_ARGS 64
 
 int main(void)
 {
     char line[1024];
-    int last_status = 0;
+    int last_status = SHELL_STATUS_SUCCESS;
 
     printf("Willkommen bei C-Shell! (exit zum Beenden)\n"); // Willkommensnachricht
 
@@ -37,7 +38,7 @@ int main(void)
 
         if (!parse_line(line, args, &argc))
         {
-            last_status = 2;
+            last_status = SHELL_STATUS_PARSE_ERROR;
             continue;
         }
 
@@ -73,5 +74,5 @@ int main(void)
 
         last_status = execute_external_command(args);
     }
-    return 0;
+    return SHELL_STATUS_SUCCESS;
 }

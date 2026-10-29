@@ -5,10 +5,11 @@
 #include <sys/wait.h>
 
 #include "executor.h"
+#include "shell_status.h"
 
 int execute_external_command(char **args)
 {
-    int command_status = 0;
+    int command_status = SHELL_STATUS_SUCCESS;
 
     pid_t pid = fork();
     if (pid == 0)
@@ -18,17 +19,17 @@ int execute_external_command(char **args)
         if (errno == EACCES)
         {
             fprintf(stderr, "%s: permission denied\n", args[0]);
-            _exit(126);
+            _exit(SHELL_STATUS_NOT_EXECUTABLE);
         }
         else if (errno == ENOENT)
         {
             fprintf(stderr, "%s: command not found\n", args[0]);
-            _exit(127);
+            _exit(SHELL_STATUS_COMMAND_NOT_FOUND);
         }
         else
         {
             perror(args[0]);
-            _exit(1);
+            _exit(SHELL_STATUS_ERROR);
         }
     }
 
@@ -45,7 +46,7 @@ int execute_external_command(char **args)
             else
             {
                 perror("waitpid");
-                command_status = 1;
+                command_status = SHELL_STATUS_ERROR;
             }
         }
         else if (WIFEXITED(status))
@@ -60,7 +61,7 @@ int execute_external_command(char **args)
     else
     {
         perror("fork");
-        command_status = 1;
+        command_status = SHELL_STATUS_ERROR;
     }
 
     return command_status;

@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "builtins.h"
+#include "shell_status.h"
 
 int change_directory(const char *path)
 {
@@ -11,24 +12,24 @@ int change_directory(const char *path)
     if (dir == NULL)
     {
         fprintf(stderr, "cd: HOME ist nicht gesetzt");
-        return 1;
+        return SHELL_STATUS_ERROR;
     }
     else if (chdir(dir) != 0)
     {
         perror("cd");
-        return 1;
+        return SHELL_STATUS_ERROR;
     }
 
-    return 0;
+    return SHELL_STATUS_SUCCESS;
 }
 
 int print_working_directory(const char *cwd)
 {
     if(printf("%s\n", cwd) < 0)
     {
-        return 1;
+        return SHELL_STATUS_ERROR;
     }
-    return 0;
+    return SHELL_STATUS_SUCCESS;
 }
 
 int print_echo(char **args, int last_status)
@@ -48,7 +49,7 @@ int print_echo(char **args, int last_status)
         if (written < 0 || (size_t)written >= sizeof(puffer1))
         {
             fprintf(stderr, "Error: Eingabe zu lang\n");
-            return 1;
+            return SHELL_STATUS_ERROR;
         }
 
         // Search for $? in the current text
@@ -64,7 +65,7 @@ int print_echo(char **args, int last_status)
             if (written < 0 || (size_t)written >= sizeof(puffer2))
             {
                 fprintf(stderr, "Error: Expanded text is too long\n");
-                return 1;
+                return SHELL_STATUS_ERROR;
             }
 
             // Copy the replaced result back into the working buffer
@@ -72,7 +73,7 @@ int print_echo(char **args, int last_status)
             if (written < 0 || (size_t)written >= sizeof(puffer1))
             {
                 fprintf(stderr, "Error: Expanded text is too long\n");
-                return 1;
+                return SHELL_STATUS_ERROR;
             }
 
             // Im aktualisierten Text nach dem nächsten $? suchen
@@ -90,7 +91,7 @@ int print_echo(char **args, int last_status)
         
     }
     printf("\n");
-    return 0;
+    return SHELL_STATUS_SUCCESS;
 
 }
 
@@ -108,5 +109,5 @@ int print_help()
     printf("\n  \033[90mWeitere Linux-Befehle wie ls, cat und gcc sind ebenfalls verfügbar.\033[0m\n");
     printf("\n");
 
-    return 0;
+    return SHELL_STATUS_SUCCESS;
 }
