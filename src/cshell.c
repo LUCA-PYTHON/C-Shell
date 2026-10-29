@@ -3,11 +3,11 @@
 #include <string.h>   // Textfunktionen
 #include <unistd.h>   // Unix-Systemaufrufe
 #include <sys/wait.h> //Prozesse abwarten
-#include <errno.h>
 
 #include "executor.h"
 #include "builtins.h"
 #include "input.h"
+#include "parser.h"
 
 #define MAX_ARGS 64
 
@@ -32,16 +32,14 @@ int main(void)
             break;
         }
 
-
         char *args[MAX_ARGS];
         int argc = 0;
-        char *token = strtok(line, " \t");
-        while (token != NULL && argc < MAX_ARGS - 1)
+
+        if (!parse_line(line, args, &argc))
         {
-            args[argc++] = token;
-            token = strtok(NULL, " \t");
+            last_status = 2;
+            continue;
         }
-        args[argc] = NULL;
 
         if (argc == 0)
             continue; // Keine Eingabe wird übersprungen
@@ -51,25 +49,25 @@ int main(void)
 
         if (strcmp(args[0], "cd") == 0) // position (Ordner) wechseln
         {
-            change_directory(args[1]);
+            last_status = change_directory(args[1]);
             continue;
         }
 
         if (strcmp(args[0], "pwd") == 0) // aktuelle Position anzeigen
         {
-            print_working_directory(cwd);
+            last_status = print_working_directory(cwd);
             continue;
         }
 
         if (strcmp(args[0], "help") == 0 || strcmp(args[0], "h") == 0)
         {
-            print_help();
+            last_status = print_help();
             continue;
         }
 
         if (strcmp(args[0], "echo") == 0)
         {
-            print_echo(args, last_status);
+            last_status = print_echo(args, last_status);
             continue;
         }
 
