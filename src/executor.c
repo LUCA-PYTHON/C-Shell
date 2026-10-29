@@ -18,17 +18,17 @@ int execute_external_command(char **args)
         if (errno == EACCES)
         {
             fprintf(stderr, "%s: permission denied\n", args[0]);
-            exit(126);
+            _exit(126);
         }
         else if (errno == ENOENT)
         {
             fprintf(stderr, "%s: command not found\n", args[0]);
-            exit(127);
+            _exit(127);
         }
         else
         {
             perror(args[0]);
-            exit(1);
+            _exit(1);
         }
     }
 

@@ -22,12 +22,16 @@ int change_directory(const char *path)
     return 0;
 }
 
-void print_working_directory(const char *cwd)
+int print_working_directory(const char *cwd)
 {
-    printf("%s\n", cwd);
+    if(printf("%s\n", cwd) < 0)
+    {
+        return 1;
+    }
+    return 0;
 }
 
-void print_echo(char **args, int last_status)
+int print_echo(char **args, int last_status)
 {
     char status_text[20];
     char puffer1[1024];
@@ -40,54 +44,57 @@ void print_echo(char **args, int last_status)
     {
 
         // Copy the argument into the working buffer
-        int geschrieben = snprintf(puffer1, sizeof(puffer1), "%s", args[i]);
-        if (geschrieben < 0 || (size_t)geschrieben >= sizeof(puffer1))
+        int written = snprintf(puffer1, sizeof(puffer1), "%s", args[i]);
+        if (written < 0 || (size_t)written >= sizeof(puffer1))
         {
             fprintf(stderr, "Error: Eingabe zu lang\n");
-            continue;
+            return 1;
         }
 
         // Search for $? in the current text
-        char *fundstelle = strstr(puffer1, "$?");
-
-        while (fundstelle != NULL)
+        char *match = strstr(puffer1, "$?");
+        while (match != NULL)
         {
-            geschrieben = snprintf(puffer2, sizeof(puffer2), "%.*s%s%s",
-                                   (int)(fundstelle - puffer1),
+            written = snprintf(puffer2, sizeof(puffer2), "%.*s%s%s",
+                                   (int)(match - puffer1),
                                    puffer1,
                                    status_text,
-                                   fundstelle + 2);
+                                   match + 2);
 
-            if (geschrieben < 0 || (size_t)geschrieben >= sizeof(puffer2))
+            if (written < 0 || (size_t)written >= sizeof(puffer2))
             {
-                fprintf(stderr, "Error: Ersetzter Text zu lang\n");
-                break;
+                fprintf(stderr, "Error: Expanded text is too long\n");
+                return 1;
             }
 
             // Copy the replaced result back into the working buffer
-            geschrieben = snprintf(puffer1, sizeof(puffer1), "%s", puffer2);
-            if (geschrieben < 0 || (size_t)geschrieben >= sizeof(puffer1))
+            written = snprintf(puffer1, sizeof(puffer1), "%s", puffer2);
+            if (written < 0 || (size_t)written >= sizeof(puffer1))
             {
-                fprintf(stderr, "Error: Ersetzter Text zu lange\n");
-                break;
+                fprintf(stderr, "Error: Expanded text is too long\n");
+                return 1;
             }
 
             // Im aktualisierten Text nach dem nächsten $? suchen
-            fundstelle = strstr(puffer1, "$?");
+            match = strstr(puffer1, "$?");
         }
 
         // Argumente mit Leerzeichen trennen
+
         if (i > 1)
         {
             printf(" ");
         }
+
         printf("%s", puffer1);
+        
     }
     printf("\n");
+    return 0;
 
 }
 
-void print_help()
+int print_help()
 {
     printf("\n");
     printf("\033[1;33m  C-Shell - Befehlsübersicht\033[0m\n");
@@ -100,4 +107,6 @@ void print_help()
 
     printf("\n  \033[90mWeitere Linux-Befehle wie ls, cat und gcc sind ebenfalls verfügbar.\033[0m\n");
     printf("\n");
+
+    return 0;
 }
