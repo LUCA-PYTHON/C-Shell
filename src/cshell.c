@@ -28,8 +28,14 @@ int main(void)
         fflush(stdout);
 
         int input_error = read_input(line, sizeof(line));
-        if (input_error == -1)
+        if (input_error == INPUT_STATUS_EOF)
         {
+            break;
+        }
+
+        if (input_error == INPUT_STATUS_ERROR)
+        {
+            perror("read_input");
             break;
         }
 
