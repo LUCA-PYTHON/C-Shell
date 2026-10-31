@@ -1,3 +1,5 @@
+#define _POSIX_C_SOURCE 200809L
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -75,6 +77,71 @@ int print_working_directory(const char *cwd)
     return SHELL_STATUS_SUCCESS;
 }
 
+extern char **environ;
+
+int print_environment(int argc, char **args)
+{
+    if (argc == 1)
+    {
+        for (char **env = environ; *env != NULL; env++)
+        {
+            printf("%s\n", *env);
+        }
+
+        return SHELL_STATUS_SUCCESS;
+    }
+
+    if (argc == 2)
+    {
+        char *value = getenv(args[1]);
+
+        if (value == NULL)
+        {
+            fprintf(stderr, "Error: Environment variable not found: %s\n", args[1]);
+            return SHELL_STATUS_ERROR;
+        }
+
+        printf("%s=%s\n", args[1], value);
+        return SHELL_STATUS_SUCCESS;
+    }
+
+    fprintf(stderr, "Error: Too many arguments\n");
+    return SHELL_STATUS_ERROR;
+}
+
+int export_variable(int argc, char **args)
+{
+    if (argc != 2)
+    {
+        fprintf(stderr, "Error: Expected one argument\n");
+        return SHELL_STATUS_ERROR;
+    }
+
+    char *seperator = strchr(args[1], '=');
+    if (seperator == NULL)
+    {
+        fprintf(stderr, "Error: Expected NAME=VALUE\n");
+        return SHELL_STATUS_ERROR;
+    }
+
+    *seperator = '\0';
+
+    char *variable_name = args[1];
+    char *variable_value = seperator + 1;
+    if (variable_name[0] == '\0')
+    {
+        fprintf(stderr, "Error: Expected NAME=VALUE\n");
+        return SHELL_STATUS_ERROR;
+    }
+
+    if (setenv(variable_name, variable_value, 1) == -1)
+    {
+        printf("setenv");
+        return SHELL_STATUS_ERROR;
+    }
+    return SHELL_STATUS_SUCCESS;
+}
+
 int print_echo(char **args, int last_status)
 {
     char status_text[20];
@@ -144,7 +211,7 @@ int print_help(void)
     printf("  \033[1;32m%-14s\033[0m %s\n", "cd [ordner]", "Verzeichnis wechseln");
     printf("  \033[1;32m%-14s\033[0m %s\n", "pwd", "Aktuelles Verzeichnis anzeigen");
     printf("  \033[1;32m%-14s\033[0m %s\n", "help", "Diese Hilfe anzeigen");
-    printf("  \033[1;32m%-14s\033[0m %s\n", "exit", "Shell beenden");
+    printf("  \033[1;32m%-14s\033[0m %s\n", "exit [status]", "Shell beenden");
     printf("  \033[1;32m%-14s\033[0m %s\n", "echo $?", "Letzten Exit-Status anzeigen");
 
     printf("\n  \033[90mWeitere Linux-Befehle wie ls, cat und gcc sind ebenfalls verfügbar.\033[0m\n");
