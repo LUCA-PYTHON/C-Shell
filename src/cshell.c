@@ -55,7 +55,7 @@ int main(void)
         }
 
         if (argc == 0)
-            continue;  // Skip empty input
+            continue;
 
         if (strcmp(args[0], "exit") == 0)
         {
@@ -68,7 +68,7 @@ int main(void)
             continue;
         }
 
-        if (strcmp(args[0], "cd") == 0)  // Change the current directory
+        if (strcmp(args[0], "cd") == 0)
         {
             if (argc > 2)
             {
@@ -80,9 +80,21 @@ int main(void)
             continue;
         }
 
-        if (strcmp(args[0], "pwd") == 0)  // Print the current working directory
+        if (strcmp(args[0], "pwd") == 0)
         {
             last_status = print_working_directory(cwd);
+            continue;
+        }
+
+        if (strcmp(args[0], "env") == 0)
+        {
+            last_status = print_environment(argc, args);
+            continue;
+        }
+
+        if (strcmp(args[0], "export") == 0)
+        {
+            last_status = export_variable(argc, args);
             continue;
         }
 
