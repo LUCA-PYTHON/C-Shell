@@ -78,7 +78,6 @@ int print_working_directory(const char *cwd)
 }
 
 extern char **environ;
-
 int print_environment(int argc, char **args)
 {
     if (argc == 1)
@@ -206,15 +205,17 @@ int print_echo(char **args, int last_status)
 int print_help(void)
 {
     printf("\n");
-    printf("\033[1;33m  C-Shell - Befehlsübersicht\033[0m\n");
+    printf("\033[1;33m  C-Shell - Command Reference\033[0m\n");
     printf("\033[0m");
-    printf("  \033[1;32m%-14s\033[0m %s\n", "cd [ordner]", "Verzeichnis wechseln");
-    printf("  \033[1;32m%-14s\033[0m %s\n", "pwd", "Aktuelles Verzeichnis anzeigen");
-    printf("  \033[1;32m%-14s\033[0m %s\n", "help", "Diese Hilfe anzeigen");
-    printf("  \033[1;32m%-14s\033[0m %s\n", "exit [status]", "Shell beenden");
-    printf("  \033[1;32m%-14s\033[0m %s\n", "echo $?", "Letzten Exit-Status anzeigen");
+    printf("  \033[1;32m%-14s\033[0m %s\n", "cd [directory]", "Change directory");
+    printf("  \033[1;32m%-14s\033[0m %s\n", "pwd", "Display current directory");
+    printf("  \033[1;32m%-14s\033[0m %s\n", "help", "Display this help message");
+    printf("  \033[1;32m%-14s\033[0m %s\n", "exit [status]", "Exit the shell");
+    printf("  \033[1;32m%-14s\033[0m %s\n", "echo $?", "Display the last exit status");
+    printf("  \033[1;32m%-14s\033[0m %s\n", "env [NAME]", "Display environment variables");
+    printf("  \033[1;32m%-14s\033[0m %s\n", "export NAME=VALUE", "Set an environment variable");
 
-    printf("\n  \033[90mWeitere Linux-Befehle wie ls, cat und gcc sind ebenfalls verfügbar.\033[0m\n");
+    printf("\n  \033[90mAdditional Linux commands such as ls, cat and gcc are also available.\033[0m\n");
     printf("\n");
 
     return SHELL_STATUS_SUCCESS;
