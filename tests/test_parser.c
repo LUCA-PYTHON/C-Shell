@@ -17,9 +17,9 @@ int main(void)
         strcmp(args[1], "-l") == 0)
     {
         printf("Test bestanden\n");
-        return SHELL_STATUS_ERROR;
+        return SHELL_STATUS_SUCCESS;
     }
 
     printf("Test fehlgeschlagen\n");
-    return SHELL_STATUS_SUCCESS;
+    return SHELL_STATUS_ERROR
 }
