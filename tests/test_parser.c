@@ -21,5 +21,5 @@ int main(void)
     }
 
     printf("Test fehlgeschlagen\n");
-    return SHELL_STATUS_ERROR
+    return SHELL_STATUS_ERROR;
 }

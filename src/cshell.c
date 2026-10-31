@@ -1,8 +1,8 @@
-#include <stdio.h>    // Standart-Lib
-#include <stdlib.h>   // Hilfsfunktionen
-#include <string.h>   // Textfunktionen
-#include <unistd.h>   // Unix-Systemaufrufe
-#include <sys/wait.h> //Prozesse abwarten
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/wait.h>
 
 #include "executor.h"
 #include "builtins.h"
@@ -14,8 +14,9 @@ int main(void)
 {
     char line[1024];
     int last_status = SHELL_STATUS_SUCCESS;
+    int exit_status = 0;
 
-    printf("Willkommen bei C-Shell! (exit zum Beenden)\n"); // Willkommensnachricht
+    printf("Willkommen bei C-Shell! (exit zum Beenden)\n");
 
     while (1)
     {
@@ -39,7 +40,7 @@ int main(void)
 
         if (input_error == INPUT_STATUS_TOO_LONG)
         {
-            fprintf(stderr, "Error: Input is to long\n");
+            fprintf(stderr, "Error: Input is too long\n");
             last_status = SHELL_STATUS_PARSE_ERROR;
             continue;
         }
@@ -54,18 +55,32 @@ int main(void)
         }
 
         if (argc == 0)
-            continue; // Keine Eingabe wird übersprungen
+            continue;  // Skip empty input
 
         if (strcmp(args[0], "exit") == 0)
-            break; // "exit" beenden die Shell
-
-        if (strcmp(args[0], "cd") == 0) // position (Ordner) wechseln
         {
+            if (handle_exit(argc, args, &exit_status) == 0)
+            {
+                return exit_status;
+            }
+
+            last_status = SHELL_STATUS_ERROR;
+            continue;
+        }
+
+        if (strcmp(args[0], "cd") == 0)  // Change the current directory
+        {
+            if (argc > 2)
+            {
+                fprintf(stderr, "Error: too many arguments\n");
+                last_status = SHELL_STATUS_ERROR;
+                continue;
+            }
             last_status = change_directory(args[1]);
             continue;
         }
 
-        if (strcmp(args[0], "pwd") == 0) // aktuelle Position anzeigen
+        if (strcmp(args[0], "pwd") == 0)  // Print the current working directory
         {
             last_status = print_working_directory(cwd);
             continue;
@@ -85,5 +100,5 @@ int main(void)
 
         last_status = execute_external_command(args);
     }
-    return SHELL_STATUS_SUCCESS;
+    return last_status;
 }

@@ -34,7 +34,7 @@ bool parse_line(char *line, char **args, int *argc_out)
         {
             if (argc >= MAX_ARGS - 1)
             {
-                fprintf(stderr, "Error: to mutch arguments\n");
+                fprintf(stderr, "Error: too many arguments\n");
                 return false;
             }
 
