@@ -2,9 +2,52 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <errno.h>
+#include <limits.h>
 
 #include "builtins.h"
 #include "shell_status.h"
+
+int handle_exit(int argc, char **args, int *exit_status)
+{
+    if (argc == 1)
+    {
+        *exit_status = 0;
+        return SHELL_STATUS_SUCCESS;
+    }
+
+    if (argc > 2)
+    {
+        fprintf(stderr, "Error: Too many arguments\n");
+        return SHELL_STATUS_ERROR;
+    }
+
+    errno = 0;
+
+    char *endptr;
+    long status = strtol(args[1], &endptr, 10);
+
+    if (errno == ERANGE)
+    {
+        fprintf(stderr, "Error: Number is outside the range of long\n");
+        return SHELL_STATUS_ERROR;
+    }
+
+    if (endptr == args[1] || *endptr != '\0')
+    {
+        fprintf(stderr, "Error: Invalid exit status\n");
+        return SHELL_STATUS_ERROR;
+    }
+
+    if (status < 0 || status > 255)
+    {
+        fprintf(stderr, "Error: Exit status must be between 0 and 255\n");
+        return SHELL_STATUS_ERROR;
+    }
+
+    *exit_status = (int)status;
+    return SHELL_STATUS_SUCCESS;
+}
 
 int change_directory(const char *path)
 {
@@ -25,7 +68,7 @@ int change_directory(const char *path)
 
 int print_working_directory(const char *cwd)
 {
-    if(printf("%s\n", cwd) < 0)
+    if (printf("%s\n", cwd) < 0)
     {
         return SHELL_STATUS_ERROR;
     }
@@ -57,10 +100,10 @@ int print_echo(char **args, int last_status)
         while (match != NULL)
         {
             written = snprintf(puffer2, sizeof(puffer2), "%.*s%s%s",
-                                   (int)(match - puffer1),
-                                   puffer1,
-                                   status_text,
-                                   match + 2);
+                               (int)(match - puffer1),
+                               puffer1,
+                               status_text,
+                               match + 2);
 
             if (written < 0 || (size_t)written >= sizeof(puffer2))
             {
@@ -88,11 +131,9 @@ int print_echo(char **args, int last_status)
         }
 
         printf("%s", puffer1);
-        
     }
     printf("\n");
     return SHELL_STATUS_SUCCESS;
-
 }
 
 int print_help(void)
