@@ -15,9 +15,9 @@ $(TARGET): $(SOURCES) $(HEADERS)
 clean:
 	rm -f $(TARGET) tests/test_parser
 
-test_parser: tests/test_parser.c src/parser.c $(HEADERS)
-	$(CC) $(CFLAGS) tests/test_parser.c src/parser.c -o tests/test_parser
+test_parser: tests/unit/test_parser.c src/parser.c $(HEADERS)
+	$(CC) $(CFLAGS) tests/unit/test_parser.c src/parser.c -o tests/unit/test_parser
 
 test: $(TARGET) test_parser
-	./tests/test_parser
+	./tests/unit/test_parser
 	bash tests/test_shell.sh
