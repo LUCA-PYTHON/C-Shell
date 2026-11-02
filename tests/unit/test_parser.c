@@ -85,25 +85,49 @@ int main(void)
     int failed = 0;
 
     if (test_parse_simple_command())
+    {
         passed++;
+    }
     else
+    {
         failed++;
+    }
 
     if (test_parse_multiple_arguments())
+    {
         passed++;
+    }
     else
+    {
         failed++;
+    }
 
     if (test_parse_empty_input())
+    {
         passed++;
+    }
     else
+    {
         failed++;
+    }
 
     if (test_parse_quoted_argument())
+    {
         passed++;
+    }
     else
+    {
         failed++;
-    printf("\033[1;32m%-14s: %d passed, %d failed\033[0m\n",
-       "Parser-Tests", passed, failed);
-    return failed == 0 ? 0 : 1;
+    }
+    
+    if (failed == 0)
+    {
+        printf("\033[1;32m%-14s: %d passed, %d failed\033[0m\n","Parser-Tests", passed, failed);
+
+        return 0;
+    }
+    else
+    {
+        printf("\033[1;31m%-14s: %d passed, %d failed\033[0m\n",    "Parser-Tests", passed, failed);
+    }
 }
