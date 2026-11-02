@@ -15,7 +15,6 @@ bool test_parse_simple_command(void)
 
     if (check && argc == 1 && strcmp(args[0], "ls") == 0)
     {
-        printf("[PASS] Simple command\n");
         return true;
     }
 
@@ -37,7 +36,6 @@ bool test_parse_multiple_arguments(void)
         strcmp(args[1], "-l") == 0 &&
         strcmp(args[2], "-a") == 0)
     {
-        printf("[PASS] Multiple arguments\n");
         return true;
     }
 
@@ -55,7 +53,6 @@ bool test_parse_empty_input(void)
 
     if (check && argc == 0)
     {
-        printf("[PASS] Empty input\n");
         return true;
     }
 
@@ -75,7 +72,6 @@ bool test_parse_quoted_argument(void)
         strcmp(args[0], "echo") == 0 &&
         strcmp(args[1], "Hello World") == 0)
     {
-        printf("[PASS] Quoted argument\n");
         return true;
     }
 
