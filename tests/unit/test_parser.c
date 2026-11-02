@@ -103,10 +103,7 @@ int main(void)
         passed++;
     else
         failed++;
-
-    printf("\nParser-Tests\n");
-    printf("Tests passed: %d\n", passed);
-    printf("Tests failed: %d\n", failed);
-
+    printf("\033[1;32m%-14s: %d passed, %d failed\033[0m\n",
+       "Parser-Tests", passed, failed);
     return failed == 0 ? 0 : 1;
 }
