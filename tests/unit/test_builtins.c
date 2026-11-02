@@ -1,6 +1,7 @@
 #define _POSIX_C_SOURCE 200809L
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <stdbool.h>
@@ -61,27 +62,66 @@ bool test_echo(void)
 
 bool test_change_directory(void)
 {
-    return false;
+    char original_directory[1024];
+    char current_directory[1024];
+
+    if (getcwd(original_directory, sizeof(original_directory)) == NULL)
+    {
+        return false;
+    }
+    
+    int result = change_directory("/tmp");
+    bool success =
+        result == SHELL_STATUS_SUCCESS &&
+        getcwd(current_directory, sizeof(current_directory)) != NULL &&
+        strcmp(current_directory, "/tmp") == 0;
+    chdir(original_directory);
+ 
+    return success;
 }
 
 bool test_print_working_directory(void)
 {
-    return false;
+    char current_directory[1024];
+
+    if (getcwd(current_directory, sizeof(current_directory)) == NULL)
+    {
+        return false;
+    }
+
+    int result = print_working_directory(current_directory);
+    return result == SHELL_STATUS_SUCCESS;
 }
 
 bool test_export_variable(void)
 {
-    return false;
+    char argument[] = "CSHELL_TEST=test";
+    char *args[] = {"export", argument, NULL};
+
+    int result = export_variable(2, args);
+    char *value = getenv("CSHELL_TEST");
+
+    bool success =
+        result == SHELL_STATUS_SUCCESS &&
+        strcmp(value, "test") == 0;
+    
+    unsetenv("CSHELL_TEST");
+
+    return success;
 }
 
 bool test_print_environment(void)
 {
-    return false;
-}
+    char *args[] = {"env", NULL};
+    char *path = getenv("PATH");
 
-bool test_print_help(void)
-{
-    return false;
+    if (path == NULL)
+    {
+        return false;
+    }
+
+    int result = print_environment(1, args);
+    return result == SHELL_STATUS_SUCCESS;
 }
 
 int main(void)
@@ -90,17 +130,64 @@ int main(void)
     int failed = 0;
 
     if (test_handle_exit())
+    {
         passed++;
+    }
     else
+    {
         failed++;
+    }
 
     if (test_echo())
+    {
         passed++;
+    }
     else
+    {
         failed++;
+    }    
+    if (test_change_directory())
+    {
+        passed++;
+    }
+    else
+    {
+        failed++;
+    }
+    if (test_print_working_directory())
+    {
+        passed++;
+    }
+    else
+    {
+        failed++;
+    }
+    if (test_export_variable())
+    {
+        passed++;
+    }
+    else
+    {
+        failed++;
+    }
+    if (test_print_environment())
+    {
+        passed++;
+    }
+    else
+    {
+        failed++;
+    }
 
-    printf("\033[1;32m%-14s: %d passed, %d failed\033[0m\n",
-       "Builtin-Tests", passed, failed);
-    return failed == 0 ? 0 : 1;
+    if (failed == 0)
+    {
+        printf("\033[1;32m%-14s: %d passed, %d failed\033[0m\n","Builtin-Tests", passed, failed);
+
+        return 0;
+    }
+    else
+    {
+        printf("\033[1;31m%-14s: %d passed, %d failed\033[0m\n",    "Builtin-Tests", passed, failed);
+    }
 
 }
