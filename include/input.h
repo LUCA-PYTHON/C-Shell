@@ -6,7 +6,10 @@
 #define INPUT_STATUS_EOF 1
 #define INPUT_STATUS_ERROR 2
 #define INPUT_STATUS_TOO_LONG 3
-
 int read_input(char *buffer, size_t size);
+int enable_raw_mode(void);
+int disable_raw_mode(void);
+int read_key(char *key);
+int history_navigation(void);
 
 #endif

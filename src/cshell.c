@@ -86,6 +86,12 @@ int main(void)
             continue;
         }
 
+        if (strcmp(args[0], "cf") == 0)
+        {
+            last_status = create_file();
+            continue;
+        }
+
         if (strcmp(args[0], "env") == 0)
         {
             last_status = print_environment(argc, args);
