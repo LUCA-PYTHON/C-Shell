@@ -30,6 +30,7 @@ core.*
 *.tmp
 *.swp
 *~
+test.txt
 
 # OS files
 .DS_Store

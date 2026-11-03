@@ -5,7 +5,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
-#include <limits.h>
+#include <fcntl.h>
 
 #include "builtins.h"
 #include "shell_status.h"
@@ -75,6 +75,38 @@ int print_working_directory(const char *cwd)
         return SHELL_STATUS_ERROR;
     }
     return SHELL_STATUS_SUCCESS;
+}
+
+int create_file(void)
+{
+    int file = open("test.txt", O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    if (file == -1)
+    {
+        perror("open");
+        return SHELL_STATUS_ERROR;
+    }
+
+    int status = SHELL_STATUS_SUCCESS;
+    const char *msg = "Welcome to C-Shell!\n";
+    ssize_t bytes_written = write(file, msg, 20);
+    if (bytes_written == -1)
+    {
+        perror("write");
+        status = SHELL_STATUS_ERROR;
+    }
+    else if ((size_t)bytes_written != strlen(msg))
+    {
+        fprintf(stderr, "Error: Incomplete write\n");
+        status = SHELL_STATUS_ERROR;
+    }
+
+    if (close(file) == -1)
+    {
+        perror("close");
+        status = SHELL_STATUS_ERROR;
+    }
+
+    return status;
 }
 
 extern char **environ;
