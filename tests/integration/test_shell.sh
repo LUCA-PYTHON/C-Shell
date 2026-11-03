@@ -63,9 +63,13 @@ else
     ((failed += 1))
 fi
 
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+NC='\033[0m'
 echo ""
-echo "Integration tests: $passed passed, $failed failed"
-
-if (( failed > 0 )); then
+if (( failed == 0 )); then
+    printf "${GREEN}Integration tests: %d passed, %d failed${NC}\n" "$passed" "$failed"
+else
+    printf "${RED}Integration tests: %d passed, %d failed${NC}\n" "$passed" "$failed"
     exit 1
 fi
