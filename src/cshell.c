@@ -16,13 +16,23 @@ int main(void)
     int last_status = SHELL_STATUS_SUCCESS;
     int exit_status = 0;
 
+    int interactive = isatty(STDIN_FILENO);
+    if (interactive)
+    {
+        printf("Welcome to C-Shell! (type exit to quit)\n");
+    }
+
     while (1)
     {
         char cwd[1024];
         if (getcwd(cwd, sizeof(cwd)) == NULL)
             strcpy(cwd, "?");
-        printf("c-shell [%s]>", cwd);
-        fflush(stdout);
+        
+        if (interactive)
+        {
+            printf("c-shell [%s]>", cwd);
+            fflush(stdout);
+        }
 
         int input_error = read_input(line, sizeof(line));
         if (input_error == INPUT_STATUS_EOF)

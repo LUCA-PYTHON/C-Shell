@@ -10,12 +10,69 @@
 static char history[HISTORY_SIZE][INPUT_SIZE];
 static int history_count = 0;
 static void add_history(const char *command);
+static int is_interactive(void)
+{
+    return isatty(STDIN_FILENO);
+}
+static int read_input_non_interactive(char *buffer, size_t size)
+{
+    size_t position = 0;
+    int input_too_long = 0;
+    char key;
+
+    while (1)
+    {
+        int status = read_key(&key);
+        if (status == INPUT_STATUS_ERROR)
+        {
+            return INPUT_STATUS_ERROR;
+        }
+        else if (status == INPUT_STATUS_EOF)
+        {
+            if (position == 0 && !input_too_long)
+            {
+                return INPUT_STATUS_EOF;
+            }
+
+            break;
+        }
+
+        if (key == '\n')
+        {
+            break;
+        }
+
+        if (position < size -1 && !input_too_long)
+        {
+            buffer[position] = key;
+            position++;
+        }
+        else
+        {
+            input_too_long = 1;
+        }
+    }
+
+    buffer[position] = '\0';
+
+    if (input_too_long)
+    {
+        return INPUT_STATUS_TOO_LONG;
+    }
+
+    return INPUT_STATUS_SUCCESS;
+}
 
 int read_input(char *buffer, size_t size)
 {
     if (buffer == NULL || size < 2)
     {
         return INPUT_STATUS_ERROR;
+    }
+
+    if (!is_interactive())
+    {
+        return read_input_non_interactive(buffer, size);
     }
 
     if (enable_raw_mode() != INPUT_STATUS_SUCCESS)
@@ -28,7 +85,6 @@ int read_input(char *buffer, size_t size)
     int result = INPUT_STATUS_SUCCESS;
     int input_too_long = 0;
     int history_index = history_count;
-    size_t old_position = 0;
 
     while (1)
     {
