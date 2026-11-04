@@ -182,12 +182,12 @@ int main(void)
     if (failed == 0)
     {
         printf("\033[1;32m%-14s: %d passed, %d failed\033[0m\n","Builtin-Tests", passed, failed);
-
         return 0;
     }
     else
     {
         printf("\033[1;31m%-14s: %d passed, %d failed\033[0m\n",    "Builtin-Tests", passed, failed);
+        return 1;
     }
 
 }

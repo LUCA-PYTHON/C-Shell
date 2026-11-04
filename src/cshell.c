@@ -16,8 +16,6 @@ int main(void)
     int last_status = SHELL_STATUS_SUCCESS;
     int exit_status = 0;
 
-    printf("Willkommen bei C-Shell! (exit zum Beenden)\n");
-
     while (1)
     {
         char cwd[1024];

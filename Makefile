@@ -1,4 +1,3 @@
-
 CC = gcc
 CFLAGS = -std=c11 -Wall -Wextra -Wpedantic -Wstrict-prototypes -g -Iinclude
 
@@ -6,40 +5,49 @@ TARGET = c-shell
 BUILD_DIR = build
 
 SOURCES = src/cshell.c src/input.c src/builtins.c src/executor.c src/parser.c
+OBJECTS = $(patsubst src/%.c,$(BUILD_DIR)/%.o,$(SOURCES))
 HEADERS = $(wildcard include/*.h)
 
-TEST_PARSER = $(BUILD_DIR)/test_parser
+TEST_PARSER   = $(BUILD_DIR)/test_parser
 TEST_BUILTINS = $(BUILD_DIR)/test_builtins
 TEST_EXECUTOR = $(BUILD_DIR)/test_executor
+TEST_INPUT    = $(BUILD_DIR)/test_input
+UNIT_TESTS    = $(TEST_PARSER) $(TEST_BUILTINS) $(TEST_EXECUTOR) $(TEST_INPUT)
 
-.PHONY: all clean test test-unit test-integration
+.PHONY: all clean test test-unit test-integration test-asan
 
 all: $(TARGET)
 
-$(TARGET): $(SOURCES) $(HEADERS)
-	$(CC) $(CFLAGS) $(SOURCES) -o $(TARGET)
+$(TARGET): $(OBJECTS)
+	$(CC) $(OBJECTS) -o $@
 
 $(BUILD_DIR):
-	mkdir -p $(BUILD_DIR)
+	mkdir -p $@
 
-$(TEST_PARSER): tests/unit/test_parser.c src/parser.c $(HEADERS) | $(BUILD_DIR)
-	$(CC) $(CFLAGS) tests/unit/test_parser.c src/parser.c -o $(TEST_PARSER)
+$(BUILD_DIR)/%.o: src/%.c | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -MMD -MP -c $< -o $@
 
-$(TEST_BUILTINS): tests/unit/test_builtins.c src/builtins.c $(HEADERS) | $(BUILD_DIR)
-	$(CC) $(CFLAGS) tests/unit/test_builtins.c src/builtins.c -o $(TEST_BUILTINS)
+-include $(OBJECTS:.o=.d)
 
-$(TEST_EXECUTOR): tests/unit/test_executor.c src/executor.c $(HEADERS) | $(BUILD_DIR)
-	$(CC) $(CFLAGS) tests/unit/test_executor.c src/executor.c -o $(TEST_EXECUTOR)
+$(BUILD_DIR)/test_%: tests/unit/test_%.c $(HEADERS) | $(BUILD_DIR)
+	$(CC) $(CFLAGS) $(filter %.c %.o,$^) -o $@
+
+$(TEST_PARSER):   $(BUILD_DIR)/parser.o
+$(TEST_BUILTINS): $(BUILD_DIR)/builtins.o
+$(TEST_EXECUTOR): $(BUILD_DIR)/executor.o
+$(TEST_INPUT):    $(BUILD_DIR)/input.o
 
 test: all test-unit test-integration
 
-test-unit: $(TEST_PARSER) $(TEST_BUILTINS) $(TEST_EXECUTOR)
-	./$(TEST_PARSER)
-	./$(TEST_BUILTINS)
-	./$(TEST_EXECUTOR)
+test-unit: $(UNIT_TESTS)
+	@for t in $(UNIT_TESTS); do echo "== $$t"; ./$$t || exit 1; done
 
 test-integration: all
 	bash tests/integration/test_shell.sh
+
+test-asan:
+	$(MAKE) clean
+	$(MAKE) CFLAGS="$(CFLAGS) -fsanitize=address,undefined -fno-omit-frame-pointer" test-unit
 
 clean:
 	rm -f $(TARGET)
