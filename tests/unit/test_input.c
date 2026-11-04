@@ -27,7 +27,7 @@ int read_test_input(const char *text, char *buffer, size_t size)
 
     if (dup2(fileno(test_file), STDIN_FILENO) == -1)
     {
-        colse(tmp_stdin);
+        close(tmp_stdin);
         fclose(test_file);
         return INPUT_STATUS_ERROR;
     }
@@ -36,7 +36,7 @@ int read_test_input(const char *text, char *buffer, size_t size)
 
     int result = read_input(buffer, size);
     dup2(tmp_stdin, STDIN_FILENO);
-    colse(tmp_stdin);
+    close(tmp_stdin);
     clearerr(stdin);
     fclose(test_file);
 
@@ -72,7 +72,7 @@ bool test_too_long_input(void)
     int result = read_test_input("hello\n", buffer, sizeof(buffer));
 
     return
-    result = INPUT_STATUS_TOO_LONG;
+    result == INPUT_STATUS_TOO_LONG;
 }
 
 bool test_read_eof(void)
@@ -111,7 +111,7 @@ int main(void)
     {
         failed++;
     }
-    if (test_read_normal_input())
+    if (test_read_empty_input())
     {
         passed++;
     }
@@ -119,15 +119,7 @@ int main(void)
     {
         failed++;
     }
-    if (test_read_invalid_argument())
-    {
-        passed++;
-    }
-    else
-    {
-        failed++;
-    }
-    if (test_read_normal_input())
+    if (test_too_long_input())
     {
         passed++;
     }
@@ -143,7 +135,7 @@ int main(void)
     {
         failed++;
     }
-    if (test_read_empty_input())
+    if (test_read_invalid_argument())
     {
         passed++;
     }
@@ -159,6 +151,7 @@ int main(void)
     else
     {
         printf("\033[1;31m%-14s: %d passed, %d failed\033[0m\n",    "Input-Tests", passed, failed);
+        return 1;
     }
 
 }

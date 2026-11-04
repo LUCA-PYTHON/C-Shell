@@ -69,6 +69,7 @@ int main(void)
     else
     {
         printf("\033[1;31m%-14s: %d passed, %d failed\033[0m\n",    "Execute-Tests", passed, failed);
+        return 1;
     }
 
 }
