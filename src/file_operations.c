@@ -49,6 +49,21 @@ int handle_file_command(int argc, char **args)
         }
         return file_write(args[2], args[3]);
     }
+
+    if (strcmp(args[1], "-r") == 0)
+    {
+        if (argc < 3)
+        {
+            fprintf(stderr, "file: missing file path\n");
+            return SHELL_STATUS_ERROR;  
+        }
+        else if (argc != 3)
+        {
+            fprintf(stderr, "Usage: file -r <path>\n");
+            return SHELL_STATUS_ERROR;
+        }
+        return file_read(args[2]);
+    }
     fprintf(stderr, "file: unknown option '%s'\n", args[1]);
     return SHELL_STATUS_ERROR;
 }
@@ -138,6 +153,66 @@ int file_write(const char *path, const char *content)
     {
         perror("close");
         return SHELL_STATUS_ERROR;
+    }
+
+    return SHELL_STATUS_SUCCESS;
+}
+
+int file_read(const char *path)
+{
+    if (path == NULL || path[0] == '\0')
+    {
+        fprintf(stderr, "file: missing file path\n");
+        return SHELL_STATUS_ERROR;
+    }
+
+    int file = open(path, O_RDONLY);
+    if (file == -1)
+    {
+        perror("open");
+        return SHELL_STATUS_ERROR; 
+    }
+
+    char buffer[4096];
+    ssize_t bytes_read;
+    char last_char = '\n';
+
+    while ((bytes_read = read(file, buffer, sizeof(buffer)))> 0)
+    {
+        ssize_t written = 0;
+        while (written < bytes_read)
+        {
+            ssize_t count = write(STDOUT_FILENO, buffer + written, (size_t)(bytes_read - written));
+
+            if (count == -1)
+            {
+                perror("write");
+                close(file);
+                return SHELL_STATUS_ERROR;
+            }
+
+            written += count;
+        }
+
+        last_char = buffer[bytes_read -1];
+    }
+
+    if (bytes_read == -1)
+    {
+        perror("read");
+        close(file);
+        return SHELL_STATUS_ERROR;
+    }
+
+    if (close(file) == -1)
+    {
+        perror("close");
+        return SHELL_STATUS_ERROR;
+    }
+
+    if (last_char != '\n')
+    {
+        write(STDOUT_FILENO, "\n", 1);
     }
 
     return SHELL_STATUS_SUCCESS;
