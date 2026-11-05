@@ -2,22 +2,23 @@
 
 #include <stdio.h>
 #include <stdbool.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
 #include "input.h"
 
-int read_test_input(const char *text, char *buffer, size_t size)
+int read_test_input(const char *text, char **buffer)
 {
     FILE *test_file = tmpfile();
     if (test_file == NULL)
     {
         return INPUT_STATUS_ERROR;
     }
-    
+
     fputs(text, test_file);
     rewind(test_file);
-    
+
     int tmp_stdin = dup(STDIN_FILENO);
     if (tmp_stdin == -1)
     {
@@ -34,7 +35,8 @@ int read_test_input(const char *text, char *buffer, size_t size)
 
     clearerr(stdin);
 
-    int result = read_input(buffer, size);
+    int result = read_input(buffer, 0);
+
     dup2(tmp_stdin, STDIN_FILENO);
     close(tmp_stdin);
     clearerr(stdin);
@@ -45,56 +47,84 @@ int read_test_input(const char *text, char *buffer, size_t size)
 
 bool test_read_normal_input(void)
 {
-    char buffer[32];
+    char *buffer = NULL;
 
-    int result = read_test_input("hello\n", buffer, sizeof(buffer));
+    int result = read_test_input("hello\n", &buffer);
+    bool ok = result == INPUT_STATUS_SUCCESS &&
+              buffer != NULL &&
+              strcmp(buffer, "hello") == 0;
 
-    return 
-    result == INPUT_STATUS_SUCCESS &&
-    strcmp(buffer, "hello") == 0;
+    free(buffer);
+    return ok;
 }
 
 bool test_read_empty_input(void)
 {
-    char buffer[32];
+    char *buffer = NULL;
 
-    int result = read_test_input("\n", buffer, sizeof(buffer));
+    int result = read_test_input("\n", &buffer);
+    bool ok = result == INPUT_STATUS_SUCCESS &&
+              buffer != NULL &&
+              strcmp(buffer, "") == 0;
 
-    return
-    result == INPUT_STATUS_SUCCESS &&
-    strcmp(buffer, "") == 0;
+    free(buffer);
+    return ok;
 }
 
-bool test_too_long_input(void)
+bool test_read_without_newline(void)
 {
-    char buffer[2];
+    char *buffer = NULL;
 
-    int result = read_test_input("hello\n", buffer, sizeof(buffer));
+    int result = read_test_input("hello", &buffer);
+    bool ok = result == INPUT_STATUS_SUCCESS &&
+              buffer != NULL &&
+              strcmp(buffer, "hello") == 0;
 
-    return
-    result == INPUT_STATUS_TOO_LONG;
+    free(buffer);
+    return ok;
+}
+
+bool test_read_long_input(void)
+{
+    enum { LENGTH = 1000 };
+    char text[LENGTH + 2];
+
+    memset(text, 'a', LENGTH);
+    text[LENGTH] = '\n';
+    text[LENGTH + 1] = '\0';
+
+    char *buffer = NULL;
+    int result = read_test_input(text, &buffer);
+
+    bool ok = result == INPUT_STATUS_SUCCESS &&
+              buffer != NULL &&
+              strlen(buffer) == LENGTH;
+
+    for (size_t i = 0; ok && i < LENGTH; i++)
+    {
+        if (buffer[i] != 'a')
+        {
+            ok = false;
+        }
+    }
+
+    free(buffer);
+    return ok;
 }
 
 bool test_read_eof(void)
 {
-    char buffer[32];
+    char *buffer = NULL;
 
-    int result = read_test_input("", buffer, sizeof(buffer));
+    int result = read_test_input("", &buffer);
 
-    return
-    result == INPUT_STATUS_EOF;
+    return result == INPUT_STATUS_EOF &&
+           buffer == NULL;
 }
 
 bool test_read_invalid_argument(void)
 {
-    char buffer[32];
-
-    int result = read_input(NULL, sizeof(buffer));
-    int result2 = read_input(buffer, 1);
-
-    return
-    result == INPUT_STATUS_ERROR &&
-    result2 == INPUT_STATUS_ERROR;
+    return read_input(NULL, 0) == INPUT_STATUS_ERROR;
 }
 
 int main(void)
@@ -103,55 +133,34 @@ int main(void)
     int passed = 0;
     int failed = 0;
 
-    if (test_read_normal_input())
+    bool (*tests[])(void) =
     {
-        passed++;
-    }
-    else
+        test_read_normal_input,
+        test_read_empty_input,
+        test_read_without_newline,
+        test_read_long_input,
+        test_read_eof,
+        test_read_invalid_argument
+    };
+
+    for (size_t i = 0; i < sizeof(tests) / sizeof(tests[0]); i++)
     {
-        failed++;
-    }
-    if (test_read_empty_input())
-    {
-        passed++;
-    }
-    else
-    {
-        failed++;
-    }
-    if (test_too_long_input())
-    {
-        passed++;
-    }
-    else
-    {
-        failed++;
-    }
-    if (test_read_eof())
-    {
-        passed++;
-    }
-    else
-    {
-        failed++;
-    }
-    if (test_read_invalid_argument())
-    {
-        passed++;
-    }
-    else
-    {
-        failed++;
-    }
-    if (failed == 0)
-    {
-        printf("\033[1;32m%-14s: %d passed, %d failed\033[0m\n","Input-Tests", passed, failed);
-        return 0;
-    }
-    else
-    {
-        printf("\033[1;31m%-14s: %d passed, %d failed\033[0m\n",    "Input-Tests", passed, failed);
-        return 1;
+        if (tests[i]())
+        {
+            passed++;
+        }
+        else
+        {
+            failed++;
+        }
     }
 
+    if (failed == 0)
+    {
+        printf("\033[1;32m%-14s: %d passed, %d failed\033[0m\n", "Input-Tests", passed, failed);
+        return 0;
+    }
+
+    printf("\033[1;31m%-14s: %d passed, %d failed\033[0m\n", "Input-Tests", passed, failed);
+    return 1;
 }
