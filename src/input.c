@@ -153,7 +153,7 @@ static void redraw_input(const char *buffer, size_t length, size_t cursor, size_
     {
         write(STDOUT_FILENO, "\n", 1);
     }
-    
+
     size_t end_row;
     size_t end_column;
     size_t target_row;
@@ -454,8 +454,39 @@ static int read_input_interactive(char **buffer, size_t *capacity, size_t prompt
 
         if (key == '\n' || key == '\r')
         {
-            write(STDOUT_FILENO, "\n", 1);
+            if (cursor != length)
+            {
+                cursor = length;
+                redraw_input(*buffer, length, cursor, prompt_column);
+            }
+
+            int width = get_terminal_width();
+            int already_wrapped = width > 0 && length > 0 && (prompt_column + length) % (size_t)width == 0;
+
+            if (!already_wrapped)
+            {
+                write(STDOUT_FILENO, "\n", 1);
+            }
             break;
+        }
+
+        if (key == 4)
+        {
+            if (length == 0)
+            {
+                write(STDOUT_FILENO, "\n", 1);
+                result = INPUT_STATUS_EOF;
+                goto cleanup;
+            }
+
+            if (cursor < length)
+            {
+                memmove(&(*buffer)[cursor],  &(*buffer)[cursor + 1], length - cursor);
+                length--;
+                redraw_input(*buffer, length, cursor, prompt_column);
+            }
+
+            continue;
         }
 
         if (key == 127 || key == 8)
@@ -477,6 +508,11 @@ static int read_input_interactive(char **buffer, size_t *capacity, size_t prompt
                     prompt_column);
             }
 
+            continue;
+        }
+
+        if ((unsigned char)key < 32)
+        {
             continue;
         }
 
