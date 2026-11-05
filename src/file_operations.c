@@ -64,6 +64,21 @@ int handle_file_command(int argc, char **args)
         }
         return file_read(args[2]);
     }
+
+    if (strcmp(args[1], "-d") == 0)
+    {
+        if (argc < 3)
+        {
+            fprintf(stderr, "file: missing file path\n");
+            return SHELL_STATUS_ERROR;  
+        }
+        else if (argc != 3)
+        {
+            fprintf(stderr, "Usage: file -d <path>\n");
+            return SHELL_STATUS_ERROR;
+        }
+        return file_delete(args[2]);
+    }
     fprintf(stderr, "file: unknown option '%s'\n", args[1]);
     return SHELL_STATUS_ERROR;
 }
@@ -213,6 +228,23 @@ int file_read(const char *path)
     if (last_char != '\n')
     {
         write(STDOUT_FILENO, "\n", 1);
+    }
+
+    return SHELL_STATUS_SUCCESS;
+}
+
+int file_delete(const char *path)
+{
+        if (path == NULL || path[0] == '\0')
+    {
+        fprintf(stderr, "file: missing file path\n");
+        return SHELL_STATUS_ERROR;
+    }
+
+    if (unlink(path) == -1)
+    {
+        perror("path");
+        return SHELL_STATUS_ERROR; 
     }
 
     return SHELL_STATUS_SUCCESS;
