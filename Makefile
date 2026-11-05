@@ -4,7 +4,7 @@ CFLAGS = -std=c11 -Wall -Wextra -Wpedantic -Wstrict-prototypes -g -Iinclude
 TARGET = c-shell
 BUILD_DIR = build
 
-SOURCES = src/cshell.c src/input.c src/builtins.c src/executor.c src/parser.c
+SOURCES = src/cshell.c src/input.c src/builtins.c src/executor.c src/parser.c src/file_operations.c
 OBJECTS = $(patsubst src/%.c,$(BUILD_DIR)/%.o,$(SOURCES))
 HEADERS = $(wildcard include/*.h)
 

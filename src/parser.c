@@ -15,6 +15,13 @@ bool parse_line(char *line, char **args, int *argc_out)
     {
         if (line[read] == '"')
         {
+            if (!in_token)
+            {
+                args[argc] = &line[write];
+                argc++;
+                in_token = true;
+            }
+            
             in_quotes = !in_quotes;
             continue;
         }
