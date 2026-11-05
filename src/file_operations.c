@@ -79,6 +79,27 @@ int handle_file_command(int argc, char **args)
         }
         return file_delete(args[2]);
     }
+
+        if (strcmp(args[1], "-a") == 0)
+    {
+        if (argc < 3)
+        {
+            fprintf(stderr, "file: missing file path\n");
+            return SHELL_STATUS_ERROR;
+        }
+        else if (argc < 4)
+        {
+            fprintf(stderr, "file: missing file content\n");
+            return SHELL_STATUS_ERROR;
+        }
+        else if (argc != 4)
+        {
+            fprintf(stderr, "Usage: file -a <path> <content>\n");
+            return SHELL_STATUS_ERROR;
+        }
+        return file_append(args[2], args[3]);
+    }
+
     fprintf(stderr, "file: unknown option '%s'\n", args[1]);
     return SHELL_STATUS_ERROR;
 }
@@ -245,6 +266,58 @@ int file_delete(const char *path)
     {
         perror("path");
         return SHELL_STATUS_ERROR; 
+    }
+
+    return SHELL_STATUS_SUCCESS;
+}
+
+int file_append(const char *path, const char *content)
+{
+    if (path == NULL || path[0] == '\0')
+    {
+        fprintf(stderr, "file: missing file path\n");
+        return SHELL_STATUS_ERROR;
+    }
+
+    if (content == NULL)
+    {
+        fprintf(stderr, "file: missing content\n");
+        return SHELL_STATUS_ERROR;
+    }
+
+    int file = open(path, O_WRONLY | O_CREAT | O_APPEND, 0644);
+    if (file == -1)
+    {
+        perror(path);
+        return SHELL_STATUS_ERROR;
+    }
+
+    size_t total_length = strlen(content);
+    size_t total_written = 0;
+    while (total_written < total_length)
+    {
+        ssize_t bytes_written = write(file, content + total_written, total_length - total_written);
+        if (bytes_written <= 0)
+        {
+                if (bytes_written == -1)
+                {
+                perror("write");
+            }
+            else
+            {
+                fprintf(stderr, "file: could not write to file\n");
+            }
+            close(file);
+            return SHELL_STATUS_ERROR;
+        }
+
+        total_written += (size_t)bytes_written;
+    }
+
+    if (close(file) == -1)
+    {
+        perror("close");
+        return SHELL_STATUS_ERROR;
     }
 
     return SHELL_STATUS_SUCCESS;
