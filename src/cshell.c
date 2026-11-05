@@ -9,10 +9,11 @@
 #include "input.h"
 #include "parser.h"
 #include "shell_status.h"
+#include "file_operations.h"
 
 int main(void)
 {
-    char line[1024];
+    char *line = NULL;
     int last_status = SHELL_STATUS_SUCCESS;
     int exit_status = 0;
 
@@ -30,27 +31,24 @@ int main(void)
         
         if (interactive)
         {
-            printf("c-shell [%s]>", cwd);
+            printf("c-shell [%s]> ", cwd);
             fflush(stdout);
         }
+        
+        size_t prompt_column = strlen("c-shell [") + strlen(cwd) + strlen("]> ");
 
-        int input_error = read_input(line, sizeof(line));
+        int input_error = read_input(&line, prompt_column);
         if (input_error == INPUT_STATUS_EOF)
         {
+            free(line);
             break;
         }
 
         if (input_error == INPUT_STATUS_ERROR)
         {
+            free(line);
             perror("read_input");
             break;
-        }
-
-        if (input_error == INPUT_STATUS_TOO_LONG)
-        {
-            fprintf(stderr, "Error: Input is too long\n");
-            last_status = SHELL_STATUS_PARSE_ERROR;
-            continue;
         }
 
         char *args[MAX_ARGS];
@@ -58,6 +56,7 @@ int main(void)
 
         if (!parse_line(line, args, &argc))
         {
+            free(line);
             last_status = SHELL_STATUS_PARSE_ERROR;
             continue;
         }
@@ -94,9 +93,9 @@ int main(void)
             continue;
         }
 
-        if (strcmp(args[0], "cf") == 0)
+        if (strcmp(args[0], "file") == 0)
         {
-            last_status = create_file();
+            last_status = handle_file_command(argc, args);
             continue;
         }
 
