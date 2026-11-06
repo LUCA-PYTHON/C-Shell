@@ -98,8 +98,7 @@ C-Shell/
 │   └── parser.c
 ├── tests/
 │   ├── unit/
-│   ├── integration/
-│   └── run_tests.sh
+│   └── integration/
 ├── Makefile
 ├── LICENSE
 └── README.md
