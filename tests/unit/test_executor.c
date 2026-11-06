@@ -8,7 +8,7 @@ bool test_execute_success(void)
 {
     char *args[] = {"/bin/true", NULL};
 
-    int result = execute_external_command(args);
+    int result = execute_external_command(args, NULL);
 
     return result == SHELL_STATUS_SUCCESS;
 }
@@ -17,7 +17,7 @@ bool test_execute_exit_status(void)
 {
     char *args[] = {"/bin/sh", "-c", "exit 5", NULL};
 
-    int result = execute_external_command(args);
+    int result = execute_external_command(args, NULL);
 
     return result == 5;
 }
@@ -26,7 +26,7 @@ bool test_execute_command_not_found(void)
 {
     char *args[] = {"not_exist", NULL};
 
-    int result = execute_external_command(args);
+    int result = execute_external_command(args, NULL);
 
     return result == SHELL_STATUS_COMMAND_NOT_FOUND;
 }
