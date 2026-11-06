@@ -56,6 +56,18 @@ printf 'exit 5\n' | "$SHELL_PROGRAM"
 status=$?
 set -e
 
+# Test 6: File operations
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
+
+printf 'file -c %s/d/f.txt\nexit\n' "$tmp" | "$SHELL_PROGRAM"
+output=$(printf 'file -D %s/d\nexit\n' "$tmp" 2>&1 | "$SHELL_PROGRAM" 2>&1)
+assert_contains "$output" "Directory not empty" "file -D refuses non-empty directory"
+
+printf 'file -d %s/d/f.txt\nfile -D %s/d\nexit\n' "$tmp" "$tmp" | "$SHELL_PROGRAM"
+[[ ! -e "$tmp/d" ]] && ((passed += 1)) || { echo "[FAIL] file -D removes empty directory"; ((failed += 1)); }
+
+
 if [[ "$status" -eq 5 ]]; then
     ((passed += 1))
 else
