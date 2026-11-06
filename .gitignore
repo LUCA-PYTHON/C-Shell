@@ -1,6 +1,5 @@
 # Compiled binaries
 /c-shell
-/tests/test_parser
 
 # Object files
 *.o
