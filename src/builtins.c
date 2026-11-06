@@ -214,6 +214,7 @@ int print_help(void)
     printf("  \033[1;32m%-14s\033[0m %s\n", "echo $?", "Display the last exit status");
     printf("  \033[1;32m%-14s\033[0m %s\n", "env [NAME]", "Display environment variables");
     printf("  \033[1;32m%-14s\033[0m %s\n", "export NAME=VALUE", "Set an environment variable");
+    printf("  \033[1;32m%-14s\033[0m %s\n", "file <-c|-w|-r|-d|-D|-a>", "Manage your files");
 
     printf("\n  \033[90mAdditional Linux commands such as ls, cat and gcc are also available.\033[0m\n");
     printf("\n");
