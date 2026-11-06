@@ -61,6 +61,13 @@ int main(void)
             continue;
         }
 
+        Redirections redirections = {NULL, NULL, false};
+        if (!extract_redirections(args, &argc, &redirections))
+        {
+            last_status = SHELL_STATUS_PARSE_ERROR;
+            continue;
+        }
+
         if (argc == 0)
             continue;
 
@@ -123,7 +130,7 @@ int main(void)
             continue;
         }
 
-        last_status = execute_external_command(args);
+        last_status = execute_external_command(args, &redirections);
     }
     return last_status;
 }
