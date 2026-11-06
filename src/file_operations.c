@@ -1,7 +1,11 @@
+#define _POSIX_C_SOURCE 200809L
+
 #include <stdio.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <limits.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 #include "file_operations.h"
@@ -11,7 +15,7 @@ int handle_file_command(int argc, char **args)
 {
     if (argc < 2)
     {
-        fprintf(stderr, "Usage: file <-c|-w|-a|-d|-r> <path>\n");
+        fprintf(stderr, "Usage: file <-c|-w|-a|-d|-D|-r> <path>\n");
         return SHELL_STATUS_ERROR;
     }
 
@@ -80,7 +84,22 @@ int handle_file_command(int argc, char **args)
         return file_delete(args[2]);
     }
 
-        if (strcmp(args[1], "-a") == 0)
+    if (strcmp(args[1], "-D") == 0)
+    {
+        if (argc < 3)
+        {
+            fprintf(stderr, "file: missing directory path\n");
+            return SHELL_STATUS_ERROR;  
+        }
+        else if (argc != 3)
+        {
+            fprintf(stderr, "Usage: file -D <directory>\n");
+            return SHELL_STATUS_ERROR;
+        }
+        return file_delete_directory(args[2]);
+    }
+
+    if (strcmp(args[1], "-a") == 0)
     {
         if (argc < 3)
         {
@@ -104,11 +123,45 @@ int handle_file_command(int argc, char **args)
     return SHELL_STATUS_ERROR;
 }
 
+static int make_dir(const char *path)
+{
+    char tmp[PATH_MAX];
+    if (strlen(path) >= sizeof(tmp))
+    {
+        errno = ENAMETOOLONG;
+        return -1;
+    }
+    memcpy(tmp, path, strlen(path) + 1);
+
+    for (char *p = tmp +1; *p != '\0'; p++)
+    {
+        if (*p != '/')
+        {
+            continue;
+        }
+
+        *p = '\0';
+        if (mkdir(tmp, 0755) == -1 && errno != EEXIST)
+        {
+            return -1;
+        }
+        *p = '/';
+    }
+
+    return SHELL_STATUS_SUCCESS;
+}
+
 int file_create(const char *path)
 {
     if (path == NULL || path[0] == '\0')
     {
         fprintf(stderr, "file: missing file path\n");
+        return SHELL_STATUS_ERROR;
+    }
+
+    if (make_dir(path) == -1)
+    {
+        fprintf(stderr, "file: %s: %s\n", path, strerror(errno));
         return SHELL_STATUS_ERROR;
     }
 
@@ -264,8 +317,25 @@ int file_delete(const char *path)
 
     if (unlink(path) == -1)
     {
-        perror("path");
+        perror(path);
         return SHELL_STATUS_ERROR; 
+    }
+
+    return SHELL_STATUS_SUCCESS;
+}
+
+int file_delete_directory(const char *path)
+{
+    if (path == NULL || path[0] == '\0')
+    {
+        fprintf(stderr, "file: missing directory path\n");
+        return SHELL_STATUS_ERROR;
+    }
+
+    if (rmdir(path) == -1)
+    {
+        perror(path);
+        return SHELL_STATUS_ERROR;
     }
 
     return SHELL_STATUS_SUCCESS;
