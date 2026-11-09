@@ -55,6 +55,179 @@ static int apply_redirections(const Redirections *redirections)
     return SHELL_STATUS_SUCCESS;
 }
 
+static int wait_for_process(pid_t pid, int *status, bool *wait_error)
+{
+    pid_t result;
+
+    do
+    {
+        result = waitpid(pid, status, 0);
+    } while (result == -1 && errno == EINTR);
+
+    if (result == -1)
+    {
+        perror("waitpid");
+        *wait_error = true;
+        return SHELL_STATUS_ERROR;
+    }
+
+    if (WIFEXITED(*status))
+    {
+        return WEXITSTATUS(*status);
+    }
+
+    if (WIFSIGNALED(*status))
+    {
+        return 128 + WTERMSIG(*status);
+    }
+
+    return SHELL_STATUS_ERROR;
+}
+
+int execute_pipeline(Pipeline *pipeline)
+{
+    pid_t child_pids[MAX_PIPELINE_COMMANDS];
+    int child_count = 0;
+    int previous_read_fd = -1;
+    bool launch_error = false;
+    bool wait_error = false;
+
+    if (pipeline == NULL || pipeline->command_count < 1 ||
+        pipeline->command_count > MAX_PIPELINE_COMMANDS)
+    {
+        return SHELL_STATUS_ERROR;
+    }
+
+    for (int i = 0; i < pipeline->command_count; i++)
+    {
+        int pipe_fd[2] = {-1, -1};
+        bool has_next_command = i + 1 < pipeline->command_count;
+
+        if (pipeline->commands[i].args[0] == NULL)
+        {
+            fprintf(stderr, "Error: missing command in pipeline\n");
+            launch_error = true;
+            if (previous_read_fd != -1)
+            {
+                close(previous_read_fd);
+            }
+            break;
+        }
+
+        if (has_next_command && pipe(pipe_fd) == -1)
+        {
+            perror("pipe");
+            launch_error = true;
+            if (previous_read_fd != -1)
+            {
+                close(previous_read_fd);
+            }
+            break;
+        }
+
+        pid_t pid = fork();
+        if (pid == 0)
+        {
+            if (previous_read_fd != -1 &&
+                dup2(previous_read_fd, STDIN_FILENO) == -1)
+            {
+                perror("dup2");
+                _exit(SHELL_STATUS_ERROR);
+            }
+
+            if (has_next_command && dup2(pipe_fd[1], STDOUT_FILENO) == -1)
+            {
+                perror("dup2");
+                _exit(SHELL_STATUS_ERROR);
+            }
+
+            if (previous_read_fd != -1)
+            {
+                close(previous_read_fd);
+            }
+            if (pipe_fd[0] != -1)
+            {
+                close(pipe_fd[0]);
+            }
+            if (pipe_fd[1] != -1)
+            {
+                close(pipe_fd[1]);
+            }
+
+            if (apply_redirections(&pipeline->commands[i].redirections) == SHELL_STATUS_ERROR)
+            {
+                _exit(SHELL_STATUS_ERROR);
+            }
+
+            execvp(pipeline->commands[i].args[0], pipeline->commands[i].args);
+
+            if (errno == EACCES)
+            {
+                fprintf(stderr, "%s: permission denied\n", pipeline->commands[i].args[0]);
+                _exit(SHELL_STATUS_NOT_EXECUTABLE);
+            }
+            if (errno == ENOENT)
+            {
+                fprintf(stderr, "%s: command not found\n", pipeline->commands[i].args[0]);
+                _exit(SHELL_STATUS_COMMAND_NOT_FOUND);
+            }
+
+            perror(pipeline->commands[i].args[0]);
+            _exit(SHELL_STATUS_ERROR);
+        }
+
+        if (pid == -1)
+        {
+            perror("fork");
+            launch_error = true;
+            if (previous_read_fd != -1)
+            {
+                close(previous_read_fd);
+                previous_read_fd = -1;
+            }
+            if (pipe_fd[0] != -1)
+            {
+                close(pipe_fd[0]);
+            }
+            if (pipe_fd[1] != -1)
+            {
+                close(pipe_fd[1]);
+            }
+            break;
+        }
+
+        child_pids[child_count++] = pid;
+
+        if (previous_read_fd != -1)
+        {
+            close(previous_read_fd);
+        }
+        if (has_next_command)
+        {
+            close(pipe_fd[1]);
+            previous_read_fd = pipe_fd[0];
+        }
+    }
+
+    int pipeline_status = SHELL_STATUS_ERROR;
+    for (int i = 0; i < child_count; i++)
+    {
+        int status;
+        int command_status = wait_for_process(child_pids[i], &status, &wait_error);
+        if (i == child_count - 1)
+        {
+            pipeline_status = command_status;
+        }
+    }
+
+    if (launch_error || wait_error)
+    {
+        return SHELL_STATUS_ERROR;
+    }
+
+    return pipeline_status;
+}
+
 int execute_external_command(char **args, const Redirections *redirections)
 {
     int command_status = SHELL_STATUS_SUCCESS;
@@ -89,29 +262,8 @@ int execute_external_command(char **args, const Redirections *redirections)
     else if (pid > 0)
     {
         int status;
-        pid_t result;
-
-        do
-        {
-            result = waitpid(pid, &status, 0);
-        }while (result == -1 && errno == EINTR);
-
-        if (result == -1)
-        {
-            perror("waitpid");
-            command_status = SHELL_STATUS_ERROR;
-        }
-
-        else if (WIFEXITED(status))
-        {
-            command_status = WEXITSTATUS(status);
-        }
-
-        else if (WIFSIGNALED(status))
-        {
-            command_status = 128 + WTERMSIG(status);
-        }
-        
+        bool wait_error = false;
+        command_status = wait_for_process(pid, &status, &wait_error);
     }
     else
     {

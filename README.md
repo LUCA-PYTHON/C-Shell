@@ -23,6 +23,7 @@ Sie kann nicht alles, aber das, was sie kann, habe ich selbst geschrieben und ve
 - Eingabe mit Zeileneditor: Pfeiltasten links/rechts zum Bewegen, Backspace, Verlauf der letzten 50 Befehle mit Pfeil hoch/runter
 - Argumente in Anführungszeichen (`echo "Hello World"`)
 - Umleitungen mit `>`, `>>` und `<` sind verfügbar
+- Pipes (`|`) zwischen externen Befehlen, z. B. `printf hello | tr a-z A-Z`
 - Eingabe auch über eine Pipe oder Datei, z. B. `printf 'echo hi\nexit\n' | ./c-shell` (dann ohne Prompt und ohne Echo)
 - Im Prompt steht immer das aktuelle Verzeichnis
 
@@ -111,7 +112,6 @@ Die Shell ist für Linux entwickelt und wird unter Ubuntu in WSL getestet. Da si
 
 ## Bekannte Einschränkungen
 
-- Keine Pipes (`|`)
 - Keine Verkettung von Befehlen (`;`, `&&`)
 - Keine Platzhalter wie `*` und keine Expansion von `~`
 - Variablen wie `$HOME` werden nicht ersetzt, nur `$?`

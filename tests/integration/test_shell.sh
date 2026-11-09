@@ -50,13 +50,17 @@ assert_contains "$output" "/tmp" "CD changes directory"
 output=$(printf 'help\nexit\n' | "$SHELL_PROGRAM")
 assert_contains "$output" "C-Shell" "Help displays command overview"
 
-# Test 5: Exit
+# Test 5: Pipeline
+output=$(printf 'printf hello | tr a-z A-Z\nexit\n' | "$SHELL_PROGRAM")
+assert_contains "$output" "HELLO" "Pipeline passes output to the next command"
+
+# Test 6: Exit
 set +e
 printf 'exit 5\n' | "$SHELL_PROGRAM"
 status=$?
 set -e
 
-# Test 6: File operations
+# Test 7: File operations
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 
