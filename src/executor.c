@@ -1,9 +1,12 @@
+#define _POSIX_C_SOURCE 200809L
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
 #include <unistd.h>
 #include <sys/wait.h>
 #include <fcntl.h>
+#include <signal.h>
 
 #include "executor.h"
 #include "shell_status.h"
@@ -84,6 +87,18 @@ static int wait_for_process(pid_t pid, int *status, bool *wait_error)
     return SHELL_STATUS_ERROR;
 }
 
+static void reset_child_signals(void)
+{
+    struct sigaction action = {0};
+    action.sa_handler = SIG_DFL;
+    sigemptyset(&action.sa_mask);
+    if (sigaction(SIGINT, &action, NULL) == -1)
+    {
+        perror("sigaction");
+        _exit(SHELL_STATUS_ERROR);
+    }
+}
+
 int execute_pipeline(Pipeline *pipeline)
 {
     pid_t child_pids[MAX_PIPELINE_COMMANDS];
@@ -128,6 +143,8 @@ int execute_pipeline(Pipeline *pipeline)
         pid_t pid = fork();
         if (pid == 0)
         {
+            reset_child_signals();
+
             if (previous_read_fd != -1 &&
                 dup2(previous_read_fd, STDIN_FILENO) == -1)
             {
@@ -235,6 +252,8 @@ int execute_external_command(char **args, const Redirections *redirections)
     pid_t pid = fork();
     if (pid == 0)
     {
+        reset_child_signals();
+
         if (apply_redirections(redirections) == SHELL_STATUS_ERROR)
         {
             _exit(SHELL_STATUS_ERROR);

@@ -1,7 +1,10 @@
+#define _POSIX_C_SOURCE 200809L
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <signal.h>
 #include <sys/wait.h>
 
 #include "executor.h"
@@ -13,6 +16,15 @@
 
 int main(void)
 {
+    struct sigaction action = {0};
+    action.sa_handler = SIG_IGN;
+    sigemptyset(&action.sa_mask);
+    if (sigaction(SIGINT, &action, NULL) == -1)
+    {
+        perror("sigaction");
+        return SHELL_STATUS_ERROR;
+    }
+
     char *line = NULL;
     int last_status = SHELL_STATUS_SUCCESS;
     int exit_status = 0;
@@ -41,6 +53,12 @@ int main(void)
         size_t prompt_column = strlen("c-shell [") + strlen(cwd) + strlen("]> ");
 
         int input_error = read_input(&line, prompt_column);
+        if (input_error == INPUT_STATUS_INTERRUPTED)
+        {
+            last_status = 130;
+            continue;
+        }
+
         if (input_error == INPUT_STATUS_EOF)
         {
             free(line);
