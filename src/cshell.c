@@ -25,6 +25,9 @@ int main(void)
 
     while (1)
     {
+        free(line);
+        line = NULL;
+
         char cwd[1024];
         if (getcwd(cwd, sizeof(cwd)) == NULL)
             strcpy(cwd, "?");
@@ -51,30 +54,32 @@ int main(void)
             break;
         }
 
-        char *args[MAX_ARGS];
-        int argc = 0;
-
-        if (!parse_line(line, args, &argc))
-        {
-            free(line);
-            last_status = SHELL_STATUS_PARSE_ERROR;
-            continue;
-        }
-
-        Redirections redirections = {NULL, NULL, false};
-        if (!extract_redirections(args, &argc, &redirections))
+        Pipeline pipeline;
+        if (!parse_pipeline(line, &pipeline))
         {
             last_status = SHELL_STATUS_PARSE_ERROR;
             continue;
         }
 
-        if (argc == 0)
+        if (pipeline.commands[0].argc == 0)
+        {
             continue;
+        }
+
+        if (pipeline.command_count > 1)
+        {
+            last_status = execute_pipeline(&pipeline);
+            continue;
+        }
+
+        char **args = pipeline.commands[0].args;
+        int argc = pipeline.commands[0].argc;
 
         if (strcmp(args[0], "exit") == 0)
         {
             if (handle_exit(argc, args, &exit_status) == 0)
             {
+                free(line);
                 return exit_status;
             }
 
@@ -130,7 +135,7 @@ int main(void)
             continue;
         }
 
-        last_status = execute_external_command(args, &redirections);
+        last_status = execute_pipeline(&pipeline);
     }
     return last_status;
 }

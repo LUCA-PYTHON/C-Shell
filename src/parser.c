@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
+#include <ctype.h>
 
 #include "executor.h"
 #include "parser.h"
@@ -66,6 +67,130 @@ bool parse_line(char *line, char **args, int *argc_out)
     return true;
 }
 
+bool parse_pipeline(char *line, Pipeline *pipeline)
+{
+    bool inside_quotes = false;
+    bool token_started = false;
+
+    char *read = line;
+    char *write = line;
+
+    pipeline->command_count = 1;
+    PipelineCommand *command = &pipeline->commands[0];
+    command->argc = 0;
+    command->args[0] = NULL;
+    command->redirections = (Redirections){NULL, NULL, false};
+
+    while(*read != '\0')
+    {
+        if (*read == '"')
+        {
+            if (!token_started)
+            {
+                if (command->argc >= MAX_ARGS -1)
+                {
+                    fprintf(stderr, "Error: too many arguments\n");
+                    return false;
+                }
+
+                command->args[command->argc++] = write;
+                token_started = true;
+            }
+
+            inside_quotes = !inside_quotes;
+            read++;
+            continue;
+        }
+
+        if (!inside_quotes && isspace((unsigned char)*read))
+        {
+            if (token_started)
+            {
+                *write = '\0';
+                write++;
+                token_started = false;
+            }
+
+            read++;
+            continue;
+        }
+
+        if (!inside_quotes && *read == '|')
+        {
+            if (token_started)
+            {
+                *write = '\0';
+                write++;
+                token_started = false;
+            }
+
+            if (command->argc == 0)
+            {
+                fprintf(stderr, "Error: empty pipeline command\n");
+                return false;
+            }
+
+            command->args[command->argc] = NULL;
+            if (!extract_redirections(command->args, &command->argc, &command->redirections))
+            {
+                return false;
+            }
+
+            if (pipeline->command_count >= MAX_PIPELINE_COMMANDS)
+            {
+                fprintf(stderr, "Error: too many pipeline commands\n");
+                return false;
+            }
+
+            command = &pipeline->commands[pipeline->command_count];
+            command->argc = 0;
+            command->args[0] = NULL;
+            command->redirections = (Redirections){NULL, NULL, false};
+
+            pipeline->command_count++;
+            read++;
+            continue;
+        }
+
+        if (!token_started)
+        {
+            if (command->argc >= MAX_ARGS -1)
+            {
+                fprintf(stderr, "Error: too many arguments\n");
+                return false;
+            }
+
+            command->args[command->argc++] = write;
+            token_started = true;
+        }
+
+        *write = *read;
+        write++;
+        read++;
+    }
+
+    if (inside_quotes)
+    {
+        fprintf(stderr, "Error: unmatched quotation marks\n");
+        return false;
+    }
+
+    if (token_started)
+    {
+        *write = '\0';
+        write++;
+    }
+
+    if (command->argc == 0)
+    {
+        fprintf(stderr, "Error: empty pipeline command\n");
+        return false;
+    }
+
+    command->args[command->argc] = NULL;
+    return extract_redirections(command->args, &command->argc, &command->redirections);
+}
+
 static bool is_redirection_operator(const char *token)
 {
     return strcmp(token, "<") == 0 || strcmp(token, ">") == 0 || strcmp(token, ">>") == 0;
@@ -91,7 +216,7 @@ bool extract_redirections(char **args, int *argc, Redirections *redirections)
             return false;
         }
 
-        const char *file = args[i + 1];
+        char *file = args[i + 1];
         if (strcmp(args[i], "<") == 0)
         {
             redirections->input_file = file;
