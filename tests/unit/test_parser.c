@@ -79,6 +79,67 @@ bool test_parse_quoted_argument(void)
     return false;
 }
 
+bool test_parse_pipeline(void)
+{
+    char line[] = "printf hello | tr a-z A-Z";
+    Pipeline pipeline;
+
+    bool check = parse_pipeline(line, &pipeline);
+
+    if (check &&
+        pipeline.command_count == 2 &&
+        pipeline.commands[0].argc == 2 &&
+        strcmp(pipeline.commands[0].args[0], "printf") == 0 &&
+        strcmp(pipeline.commands[0].args[1], "hello") == 0 &&
+        pipeline.commands[1].argc == 3 &&
+        strcmp(pipeline.commands[1].args[0], "tr") == 0 &&
+        strcmp(pipeline.commands[1].args[1], "a-z") == 0 &&
+        strcmp(pipeline.commands[1].args[2], "A-Z") == 0)
+    {
+        return true;
+    }
+
+    printf("[FAIL] Pipeline parsing\n");
+    return false;
+}
+
+bool test_parse_pipeline_redirections(void)
+{
+    char line[] = "cat < input.txt | wc -l > output.txt";
+    Pipeline pipeline;
+
+    bool check = parse_pipeline(line, &pipeline);
+
+    if (check &&
+        pipeline.command_count == 2 &&
+        pipeline.commands[0].argc == 1 &&
+        strcmp(pipeline.commands[0].args[0], "cat") == 0 &&
+        strcmp(pipeline.commands[0].redirections.input_file, "input.txt") == 0 &&
+        pipeline.commands[1].argc == 2 &&
+        strcmp(pipeline.commands[1].args[0], "wc") == 0 &&
+        strcmp(pipeline.commands[1].redirections.output_file, "output.txt") == 0)
+    {
+        return true;
+    }
+
+    printf("[FAIL] Pipeline redirections\n");
+    return false;
+}
+
+bool test_parse_invalid_pipeline(void)
+{
+    char line[] = "echo hello |";
+    Pipeline pipeline;
+
+    if (!parse_pipeline(line, &pipeline))
+    {
+        return true;
+    }
+
+    printf("[FAIL] Invalid pipeline\n");
+    return false;
+}
+
 int main(void)
 {
     int passed = 0;
@@ -112,6 +173,33 @@ int main(void)
     }
 
     if (test_parse_quoted_argument())
+    {
+        passed++;
+    }
+    else
+    {
+        failed++;
+    }
+
+    if (test_parse_pipeline())
+    {
+        passed++;
+    }
+    else
+    {
+        failed++;
+    }
+
+    if (test_parse_pipeline_redirections())
+    {
+        passed++;
+    }
+    else
+    {
+        failed++;
+    }
+
+    if (test_parse_invalid_pipeline())
     {
         passed++;
     }
