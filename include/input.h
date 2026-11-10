@@ -6,6 +6,8 @@
 #define INPUT_STATUS_EOF 1
 #define INPUT_STATUS_ERROR 2
 #define INPUT_STATUS_TOO_LONG 3
+#define INPUT_STATUS_INTERRUPTED 4
+
 int read_input(char **buffer, size_t prompt_column);
 int enable_raw_mode(void);
 int disable_raw_mode(void);
