@@ -332,6 +332,14 @@ static int read_input_interactive(char **buffer, size_t *capacity, size_t prompt
             goto cleanup;
         }
 
+        if (key == 3)
+        {
+            write(STDOUT_FILENO, "\n", 1);
+            (*buffer)[0] = '\0';
+            result = INPUT_STATUS_INTERRUPTED;
+            goto cleanup;
+        }
+
         if (key == 27)
         {
             char sequence[2];
@@ -567,7 +575,7 @@ int enable_raw_mode(void)
     }
 
     raw = original;
-    raw.c_lflag &= ~(ICANON | ECHO);
+    raw.c_lflag &= ~(ICANON | ECHO | ISIG);
 
     int changed = tcsetattr(STDIN_FILENO, TCSANOW, &raw);
 
