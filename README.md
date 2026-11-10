@@ -122,6 +122,16 @@ Die Shell ist für Linux entwickelt und wird unter Ubuntu in WSL getestet. Da si
 
 Das Projekt befindet sich in Entwicklung. Neue Funktionen und Verbesserungen werden schrittweise umgesetzt, während ich die Grundlagen von C und Linux vertiefe.
 
+## Branch-Workflow
+
+Änderungen laufen in eine Richtung durch die Branches:
+
+1. `feature/*` von `develop` erstellen und per Pull Request nach `develop` mergen.
+2. Getestete Änderungen von `develop` per Pull Request nach `main` übernehmen.
+3. `main` bleibt der stabile Stand; direkte Pushes und Force-Pushes auf `main` vermeiden.
+
+Zwischen den langlebigen Branches `develop` und `main` Pull Requests mit einem Merge-Commit verwenden, nicht Squash oder Rebase: So bleibt die gemeinsame Commit-Historie erhalten und dieselben Änderungen werden nicht als unabhängige Commits erneut eingebracht. Feature-Branches können nach dem PR gelöscht werden. `main` muss im normalen Release-Ablauf nicht zurück nach `develop` gemergt werden. Bei einem dringenden Hotfix, der direkt auf `main` landet, den Hotfix anschließend auch nach `develop` übernehmen, damit beide Branches wieder dieselben Änderungen enthalten. Branch-Schutz für `main` mit erforderlichem Pull Request und bestandenen Tests hilft, versehentliche Direktänderungen zu verhindern. Lokale Branches nach einem PR mit `git fetch` gegen `origin` abgleichen, statt Änderungen unabhängig auf beiden Branches neu zu committen.
+
 ## Lizenz
 
 Apache License 2.0, siehe [LICENSE](LICENSE).
