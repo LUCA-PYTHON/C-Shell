@@ -283,6 +283,8 @@ int execute_external_command(char **args, const Redirections *redirections)
         int status;
         bool wait_error = false;
         command_status = wait_for_process(pid, &status, &wait_error);
+        bool wait_error = false;
+        command_status = wait_for_process(pid, &status, &wait_error);
     }
     else
     {
