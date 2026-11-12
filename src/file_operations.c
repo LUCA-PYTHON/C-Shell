@@ -1,11 +1,14 @@
 #define _POSIX_C_SOURCE 200809L
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 #include "file_operations.h"
@@ -15,8 +18,23 @@ int handle_file_command(int argc, char **args)
 {
     if (argc < 2)
     {
-        fprintf(stderr, "Usage: file <-c|-w|-a|-d|-D|-r> <path>\n");
+        fprintf(stderr, "Usage: file <-o|-c|-w|-a|-d|-D|-r> <path>\n");
         return SHELL_STATUS_ERROR;
+    }
+
+    if (strcmp(args[1], "-o") == 0)
+    {
+        if (argc < 3)
+        {
+            fprintf(stderr, "file: missing file path\n");
+            return SHELL_STATUS_ERROR;
+        }
+        else if (argc != 3)
+        {
+            fprintf(stderr, "Usage: file -o <path>\n");
+            return SHELL_STATUS_ERROR;
+        }
+        return file_open(args[2]);
     }
 
     if (strcmp(args[1], "-c") == 0)
@@ -146,6 +164,37 @@ static int make_dir(const char *path)
             return -1;
         }
         *p = '/';
+    }
+
+    return SHELL_STATUS_SUCCESS;
+}
+
+int file_open(const char *path)
+{
+    if (path == NULL || path[0] == '\0')
+    {
+        fprintf(stderr, "file: missing file path\n");
+        return SHELL_STATUS_ERROR;
+    }
+
+    if (access(path, F_OK) == -1 || access(path, R_OK) == -1)
+    {
+        fprintf(stderr, "file: %s: %s\n", path, strerror(errno));
+        return SHELL_STATUS_ERROR;
+    }
+
+    pid_t pid = fork();
+    if (pid == -1)
+    {
+        perror("fork");
+        return SHELL_STATUS_ERROR;
+    }
+
+    if (pid == 0)
+    {
+        execlp("xdg-open", "xdg-open", path, (char*)NULL);
+        perror("xdg-open");
+        _exit(SHELL_STATUS_ERROR);
     }
 
     return SHELL_STATUS_SUCCESS;
