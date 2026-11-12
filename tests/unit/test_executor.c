@@ -4,72 +4,57 @@
 #include "executor.h"
 #include "shell_status.h"
 
-bool test_execute_success(void)
+static int passed = 0, failed = 0;
+
+static void check(const char *name, bool ok)
+{
+    if (ok)
+    {
+        passed++;
+    }
+    else
+    {
+        failed++;
+        printf("  [FAIL] %s\n", name);
+    }
+}
+
+static void test_execute_success(void)
 {
     char *args[] = {"/bin/true", NULL};
 
-    int result = execute_external_command(args, NULL);
-
-    return result == SHELL_STATUS_SUCCESS;
+    check("execute: Erfolg -> Status 0",
+          execute_external_command(args, NULL) == SHELL_STATUS_SUCCESS);
 }
 
-bool test_execute_exit_status(void)
+static void test_execute_exit_status(void)
 {
     char *args[] = {"/bin/sh", "-c", "exit 5", NULL};
 
-    int result = execute_external_command(args, NULL);
-
-    return result == 5;
+    check("execute: Exit-Status 5 wird durchgereicht",
+          execute_external_command(args, NULL) == 5);
 }
 
-bool test_execute_command_not_found(void)
+static void test_execute_command_not_found(void)
 {
     char *args[] = {"not_exist", NULL};
 
-    int result = execute_external_command(args, NULL);
-
-    return result == SHELL_STATUS_COMMAND_NOT_FOUND;
+    check("execute: unbekannter Befehl -> 127",
+          execute_external_command(args, NULL) == SHELL_STATUS_COMMAND_NOT_FOUND);
 }
 
 int main(void)
 {
-    int passed = 0;
-    int failed = 0;
-
-    if (test_execute_success())
-    {
-        passed++;
-    }
-    else
-    {
-        failed++;
-    }
-    if (test_execute_exit_status())
-    {
-        passed++;
-    }
-    else
-    {
-        failed++;
-    }
-    if (test_execute_command_not_found())
-    {
-        passed++;
-    }
-    else
-    {
-        failed++;
-    }
+    test_execute_success();
+    test_execute_exit_status();
+    test_execute_command_not_found();
 
     if (failed == 0)
     {
-        printf("\033[1;32m%-14s: %d passed, %d failed\033[0m\n","Execute-Tests", passed, failed);
+        printf("\033[1;32m%-14s: %d passed, %d failed\033[0m\n", "Execute-Tests", passed, failed);
         return 0;
     }
-    else
-    {
-        printf("\033[1;31m%-14s: %d passed, %d failed\033[0m\n",    "Execute-Tests", passed, failed);
-        return 1;
-    }
 
+    printf("\033[1;31m%-14s: %d passed, %d failed\033[0m\n", "Execute-Tests", passed, failed);
+    return 1;
 }
