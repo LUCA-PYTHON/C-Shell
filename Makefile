@@ -12,7 +12,8 @@ TEST_PARSER   = $(BUILD_DIR)/test_parser
 TEST_BUILTINS = $(BUILD_DIR)/test_builtins
 TEST_EXECUTOR = $(BUILD_DIR)/test_executor
 TEST_INPUT    = $(BUILD_DIR)/test_input
-UNIT_TESTS    = $(TEST_PARSER) $(TEST_BUILTINS) $(TEST_EXECUTOR) $(TEST_INPUT)
+TEST_FILE     = $(BUILD_DIR)/test_file_operations
+UNIT_TESTS    = $(TEST_PARSER) $(TEST_BUILTINS) $(TEST_EXECUTOR) $(TEST_INPUT) $(TEST_FILE)
 
 .PHONY: all clean test test-unit test-integration test-asan
 
@@ -36,6 +37,7 @@ $(TEST_PARSER):   $(BUILD_DIR)/parser.o
 $(TEST_BUILTINS): $(BUILD_DIR)/builtins.o
 $(TEST_EXECUTOR): $(BUILD_DIR)/executor.o
 $(TEST_INPUT):    $(BUILD_DIR)/input.o
+$(TEST_FILE):     $(BUILD_DIR)/file_operations.o
 
 test: all test-unit test-integration
 

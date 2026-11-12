@@ -8,7 +8,22 @@
 
 #include "input.h"
 
-int read_test_input(const char *text, char **buffer)
+static int passed = 0, failed = 0;
+
+static void check(const char *name, bool ok)
+{
+    if (ok)
+    {
+        passed++;
+    }
+    else
+    {
+        failed++;
+        printf("  [FAIL] %s\n", name);
+    }
+}
+
+static int read_test_input(const char *text, char **buffer)
 {
     FILE *test_file = tmpfile();
     if (test_file == NULL)
@@ -45,46 +60,49 @@ int read_test_input(const char *text, char **buffer)
     return result;
 }
 
-bool test_read_normal_input(void)
+static void test_read_normal_input(void)
 {
     char *buffer = NULL;
 
     int result = read_test_input("hello\n", &buffer);
-    bool ok = result == INPUT_STATUS_SUCCESS &&
-              buffer != NULL &&
-              strcmp(buffer, "hello") == 0;
+
+    check("input: normale Zeile",
+          result == INPUT_STATUS_SUCCESS &&
+          buffer != NULL &&
+          strcmp(buffer, "hello") == 0);
 
     free(buffer);
-    return ok;
 }
 
-bool test_read_empty_input(void)
+static void test_read_empty_input(void)
 {
     char *buffer = NULL;
 
     int result = read_test_input("\n", &buffer);
-    bool ok = result == INPUT_STATUS_SUCCESS &&
-              buffer != NULL &&
-              strcmp(buffer, "") == 0;
+
+    check("input: leere Zeile",
+          result == INPUT_STATUS_SUCCESS &&
+          buffer != NULL &&
+          strcmp(buffer, "") == 0);
 
     free(buffer);
-    return ok;
 }
 
-bool test_read_without_newline(void)
+static void test_read_without_newline(void)
 {
     char *buffer = NULL;
 
     int result = read_test_input("hello", &buffer);
-    bool ok = result == INPUT_STATUS_SUCCESS &&
-              buffer != NULL &&
-              strcmp(buffer, "hello") == 0;
+
+    check("input: ohne Zeilenumbruch am Ende",
+          result == INPUT_STATUS_SUCCESS &&
+          buffer != NULL &&
+          strcmp(buffer, "hello") == 0);
 
     free(buffer);
-    return ok;
 }
 
-bool test_read_long_input(void)
+static void test_read_long_input(void)
 {
     enum { LENGTH = 1000 };
     char text[LENGTH + 2];
@@ -108,52 +126,36 @@ bool test_read_long_input(void)
         }
     }
 
+    check("input: lange Zeile (1000 Zeichen)", ok);
+
     free(buffer);
-    return ok;
 }
 
-bool test_read_eof(void)
+static void test_read_eof(void)
 {
     char *buffer = NULL;
 
     int result = read_test_input("", &buffer);
 
-    return result == INPUT_STATUS_EOF &&
-           buffer == NULL;
+    check("input: EOF", result == INPUT_STATUS_EOF && buffer == NULL);
 }
 
-bool test_read_invalid_argument(void)
+static void test_read_invalid_argument(void)
 {
-    return read_input(NULL, 0) == INPUT_STATUS_ERROR;
+    check("input: NULL-Puffer -> Fehler",
+          read_input(NULL, 0) == INPUT_STATUS_ERROR);
 }
 
 int main(void)
 {
     setvbuf(stdin, NULL, _IONBF, 0);
-    int passed = 0;
-    int failed = 0;
 
-    bool (*tests[])(void) =
-    {
-        test_read_normal_input,
-        test_read_empty_input,
-        test_read_without_newline,
-        test_read_long_input,
-        test_read_eof,
-        test_read_invalid_argument
-    };
-
-    for (size_t i = 0; i < sizeof(tests) / sizeof(tests[0]); i++)
-    {
-        if (tests[i]())
-        {
-            passed++;
-        }
-        else
-        {
-            failed++;
-        }
-    }
+    test_read_normal_input();
+    test_read_empty_input();
+    test_read_without_newline();
+    test_read_long_input();
+    test_read_eof();
+    test_read_invalid_argument();
 
     if (failed == 0)
     {
