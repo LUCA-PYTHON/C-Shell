@@ -1,10 +1,157 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
 #include <ctype.h>
 
 #include "executor.h"
 #include "parser.h"
+
+static bool is_name_start(char c)
+{
+    if (isalpha((unsigned char)c) || c == '_')
+    {
+        return true;
+    }
+
+    return false;
+}
+
+static bool is_name_char(char c)
+{
+    if (isalnum((unsigned char)c) || c == '_')
+    {
+        return true;
+    }
+
+    return false;
+}
+
+bool expand_arg(const char *args, char *out, size_t out_size)
+{
+    size_t zero = 0;
+    size_t i = 0;
+
+    if (args[0] == '~' && (args[1] == '/' || args[1] == '\0'))
+    {
+        const char *home = getenv("HOME");
+        if (home != NULL)
+        {
+            size_t len_home = strlen(home);
+            if (len_home >= out_size)
+            {
+                return false;
+            }
+
+            memcpy(out, home, len_home);
+            zero = len_home;
+            i = 1;
+        }
+    }
+
+    while (args[i] != '\0')
+    {
+        if (args[i] == '$' && is_name_start(args[i + 1]))
+        {
+            char name[256];
+            size_t n = 0;
+            size_t ii = i + 1;
+
+            while (is_name_char(args[ii]))
+            {
+                if (n >= sizeof(name) - 1)
+                {
+                    return false;
+                }
+
+                name[n++] = args[ii++];
+            }
+            name[n] = '\0';
+
+            const char *value = getenv(name);
+            if (value != NULL)
+            {
+                size_t len_value = strlen(value);
+                if (zero + len_value >= out_size)
+                {
+                    return false;
+                }
+
+                memcpy(&out[zero], value, len_value);
+                zero += len_value;
+            }
+
+            i = ii;
+            continue;
+        }
+
+        if (zero + 1 >= out_size)
+        {
+            return false;
+        }
+
+        out[zero++] = args[i++];
+    }
+
+    out[zero] = '\0';
+    return true;
+}
+
+static bool needs_expansion(const char *arg)
+{
+    if(strchr(arg, '$') != NULL || (arg[0] == '~' && (arg[1] == '/' || arg[1] == '\0')))
+    {
+        return true;
+    }
+
+    return false;
+}
+
+static bool expand_in_pipeline(Pipeline *pipeline, const char **args)
+{
+    if (*args == NULL || !needs_expansion(*args))
+    {
+        return true;
+    }
+
+    char *target = &pipeline->expanded[pipeline->expanded_used];
+    size_t space = EXPAND_BUFFER_SIZE - pipeline->expanded_used;
+    if (!expand_arg(*args, target, space))
+    {
+        fprintf(stderr, "Error: expanded argument too long\n");
+        return false;
+    }
+
+    pipeline->expanded_used += strlen(target) + 1;
+    *args = target;
+    return true;
+}
+
+bool expand_pipeline(Pipeline *pipeline)
+{
+    pipeline->expanded_used = 0;
+    for (int c = 0; c < pipeline->command_count; c++)
+    {
+        PipelineCommand *command = &pipeline->commands[c];
+        for (int i = 0; i < command->argc; i++)
+        {
+            const char *args = command->args[i];
+            if (!expand_in_pipeline(pipeline, &args))
+            {
+                return false;
+            }
+
+            command->args[i] = (char *)args;
+        }
+
+        if (!expand_in_pipeline(pipeline, &command->redirections.input_file) || !expand_in_pipeline(pipeline, &command->redirections.output_file))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
 
 bool parse_line(char *line, char **args, int *argc_out)
 {

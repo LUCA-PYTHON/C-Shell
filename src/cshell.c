@@ -84,6 +84,12 @@ int main(void)
             continue;
         }
 
+        if (!expand_pipeline(&pipeline))
+        {
+            last_status = SHELL_STATUS_ERROR;
+            continue;
+        }
+
         if (pipeline.command_count > 1)
         {
             last_status = execute_pipeline(&pipeline);
