@@ -13,6 +13,7 @@ int enable_raw_mode(void);
 int disable_raw_mode(void);
 int read_key(char *key);
 int history_navigation(void);
+void history_load(void);
 int get_terminal_width(void);
 
 #endif

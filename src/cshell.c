@@ -33,6 +33,7 @@ int main(void)
     if (interactive)
     {
         printf("Welcome to C-Shell! (type exit to quit)\n");
+        history_load();
     }
 
     while (1)
