@@ -10,14 +10,15 @@
 
 #include "input.h"
 
-#define HISTORY_FILE_LIMIT 1000
 #define HISTORY_SIZE 500
+#define HISTORY_FILE_LIMIT HISTORY_SIZE
 #define INPUT_SIZE 1024
 #define INITIAL_INPUT_SIZE 128
 #define INPUT_GROWTH 128
 
 static char history[HISTORY_SIZE][INPUT_SIZE];
 static int history_count = 0;
+static int history_file_lines = 0;
 static size_t previous_length = 0;
 static size_t previous_cursor = 0;
 
@@ -722,10 +723,12 @@ void history_load(void)
     }
 
     fclose(file);
+    history_file_lines = total;
 
     if (total > HISTORY_FILE_LIMIT)
     {
         history_rewrite(path);
+        history_file_lines = history_count;
     }
 }
 
@@ -768,6 +771,17 @@ static void add_history(const char *command)
 
     history_push(command);
     history_append(command);
+
+    history_file_lines++;
+    if (history_file_lines > HISTORY_FILE_LIMIT)
+    {
+        char path[1024];
+        if (history_path(path, sizeof(path)) == 0)
+        {
+            history_rewrite(path);
+            history_file_lines = history_count;
+        }
+    }
 }
 
 static void history_push(const char *command)
