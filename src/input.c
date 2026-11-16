@@ -1,13 +1,17 @@
+#define _POSIX_C_SOURCE 200809L
+
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 #include <termios.h>
 #include <sys/ioctl.h>
 #include <stdlib.h>
+#include <fcntl.h>
 
 #include "input.h"
 
-#define HISTORY_SIZE 50
+#define HISTORY_FILE_LIMIT 1000
+#define HISTORY_SIZE 500
 #define INPUT_SIZE 1024
 #define INITIAL_INPUT_SIZE 128
 #define INPUT_GROWTH 128
@@ -21,6 +25,9 @@ static struct termios original;
 static struct termios raw;
 
 static void add_history(const char *command);
+static void history_push(const char *command);
+static void history_append(const char *command);
+static void history_rewrite(const char *path);
 static void get_cursor_position(size_t position, size_t terminal_width, size_t *row, size_t *column);
 static void redraw_input(const char *buffer, size_t length, size_t cursor, size_t prompt_column);
 static int read_input_non_interactive(char **buffer, size_t *capacity);
@@ -623,21 +630,161 @@ int read_key(char *key)
     return INPUT_STATUS_SUCCESS;
 }
 
+static int history_path(char *path, size_t size)
+{
+    const char *home = getenv("HOME");
+    if (home == NULL)
+    {
+        return -1;
+    }
+
+    int written = snprintf(path, size, "%s/.c_shell_history", home);
+    if (written < 0 || (size_t)written >= size)
+    {
+        return -1;
+    }
+
+    return 0;
+}
+
+static void history_rewrite(const char *path)
+{
+    char tmp_path[1100];
+    int written = snprintf(tmp_path, sizeof(tmp_path), "%s.tmp", path);
+    if (written < 0 || (size_t)written >= sizeof(tmp_path))
+    {
+        return;
+    }
+
+    int fd = open(tmp_path, O_WRONLY | O_CREAT | O_TRUNC, 0600);
+    if (fd == -1)
+    {
+        return;
+    }
+
+    FILE *file = fdopen(fd, "w");
+    if (file == NULL)
+    {
+        close(fd);
+        return;
+    }
+
+    for (int i = 0; i < history_count; i++)
+    {
+        fprintf(file, "%s\n", history[i]);
+    }
+
+    if (fclose(file) != 0)
+    {
+        remove(tmp_path);
+        return;
+    }
+
+    rename(tmp_path, path);
+}
+
+void history_load(void)
+{
+    char path[1024];
+    if (history_path(path, sizeof(path)) != 0)
+    {
+        return;
+    }
+
+    FILE *file = fopen(path, "r");
+    if (file == NULL)
+    {
+        return;
+    }
+
+    char line[INPUT_SIZE];
+    int total = 0;
+
+    while (fgets(line, sizeof(line), file) != NULL)
+    {
+        total++;
+    }
+
+    rewind(file);
+
+    int skip = total > HISTORY_SIZE ? total - HISTORY_SIZE : 0;
+    int index = 0;
+
+    while (fgets(line, sizeof(line), file) != NULL)
+    {
+        if (index++ < skip)
+        {
+            continue;
+        }
+
+        line[strcspn(line, "\n")] = '\0';
+        history_push(line);
+    }
+
+    fclose(file);
+
+    if (total > HISTORY_FILE_LIMIT)
+    {
+        history_rewrite(path);
+    }
+}
+
+static void history_append(const char *command)
+{
+    char path[1024];
+    if (history_path(path, sizeof(path)) != 0)
+    {
+        return;
+    }
+
+    int fd = open(path, O_WRONLY | O_CREAT | O_APPEND, 0600);
+    if (fd == -1)
+    {
+        return;
+    }
+
+    FILE *file = fdopen(fd, "a");
+    if (file == NULL)
+    {
+        close(fd);
+        return;
+    }
+
+    fprintf(file, "%s\n", command);
+    fclose(file);
+}
+
 static void add_history(const char *command)
+{
+    if (command == NULL || command[0] == '\0' || command[0] == ' ')
+    {
+        return;
+    }
+
+    if (history_count > 0 && strcmp(history[history_count - 1], command) == 0)
+    {
+        return;
+    }
+
+    history_push(command);
+    history_append(command);
+}
+
+static void history_push(const char *command)
 {
     if (command == NULL || command[0] == '\0')
     {
         return;
     }
 
-    if (HISTORY_SIZE > history_count)
+    if (history_count < HISTORY_SIZE)
     {
         snprintf(history[history_count], INPUT_SIZE, "%s", command);
         history_count++;
     }
-    else if (history_count == HISTORY_SIZE)
+    else
     {
-        for (int i = 0; i < HISTORY_SIZE - 1; i++)
+        for (int i = 0; i < HISTORY_SIZE -1; i++)
         {
             memmove(history[i], history[i + 1], INPUT_SIZE);
         }
